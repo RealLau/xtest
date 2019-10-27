@@ -1,0 +1,293 @@
+{% extends 'Base/base.html' %}
+
+{% block shotcut_operation %}
+    <span class="item_create_info">以下是最近一次测试计划的统计，你也可以<a href="{% url 'new' item=3 %}"><i
+            class="fa fa-pencil operation_link"></i></a>创建新的测试计划</span>
+{% endblock %}
+
+{% block main_content %}
+    <div class="row tm-content-row">
+        <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 tm-block-col">
+            <div class="tm-bg-primary-dark tm-block">
+                <h2 class="tm-block-title">BUG收敛曲线</h2>
+                <ul class="nav-dropdown">
+                    <li>
+                        <a>选择计划</a>
+                        <ul class="ks-checkbox-tags">
+                            {% for p in plans %}
+                                <li>
+                                    <input type="checkbox" id="plan-{{ p.pk }}" value="{{ p.name }}"
+                                           class="multi-checkbox">
+                                    <label for="plan-{{ p.pk }}" class="fa fa-plus">{{ p.name }}</label>
+                                </li>
+                            {% endfor %}
+                            <button id="confirm-select-plan-convergence-line" class="confirm-select-plan">确定</button>
+                        </ul>
+                    </li>
+                </ul>
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 tm-block-col">
+            <div class="tm-bg-primary-dark tm-block tm-block-taller">
+                <h2 class="tm-block-title">BUG等级分布</h2>
+                <ul class="nav-dropdown">
+                    <li>
+                        <a>选择计划</a>
+                        <ul class="ks-checkbox-tags">
+                            {% for p in plans %}
+                                <li>
+                                    <input type="checkbox" id="plan-{{ p.pk }}" value="{{ p.name }}"
+                                           class="single-checkbox-level">
+                                    <label for="plan-{{ p.pk }}"
+                                           class="fa fa-circle-o single-checkbox-level-label">{{ p.name }}</label>
+                                </li>
+                            {% endfor %}
+                            <button id="confirm-select-plan-level-pie" class="confirm-select-plan">确定</button>
+                        </ul>
+                    </li>
+                </ul>
+                <div id="pieChartContainer">
+                    <canvas id="pieChart" class="chartjs-render-monitor" width="200" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 tm-block-col">
+            <div class="tm-bg-primary-dark tm-block">
+                <h2 class="tm-block-title">BUG模块分布</h2>
+                <ul class="nav-dropdown">
+                    <li>
+                        <a>选择计划</a>
+                        <ul class="ks-checkbox-tags">
+                            {% for p in plans %}
+                                <li>
+                                    <input type="checkbox" id="plan-{{ p.pk }}" value="{{ p.name }}"
+                                           class="single-checkbox-module">
+                                    <label for="plan-{{ p.pk }}"
+                                           class="fa fa-circle-o single-checkbox-module-label">{{ p.name }}</label>
+                                </li>
+                            {% endfor %}
+                            <button id="confirm-select-plan-level-bar" class="confirm-select-plan">确定</button>
+                        </ul>
+                    </li>
+                </ul>
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+        <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 tm-block-col">
+            <div class="tm-bg-primary-dark tm-block">
+                <h2 class="tm-block-title">用例执行情况</h2>
+                <ul class="nav-dropdown">
+                    <li>
+                        <a>选择计划</a>
+                        <ul class="ks-checkbox-tags">
+                            {% for p in plans %}
+                                <li>
+                                    <input type="checkbox" id="plan-{{ p.pk }}" value="{{ p.name }}"
+                                           class="single-checkbox-execute">
+                                    <label for="plan-{{ p.pk }}"
+                                           class="fa fa-circle-o single-checkbox-execute-label">{{ p.name }}</label>
+                                </li>
+                            {% endfor %}
+                            <button id="confirm-select-plan-execute-bar" class="confirm-select-plan">确定</button>
+                        </ul>
+                    </li>
+                </ul>
+                <canvas id="Chart-caseExecution"></canvas>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block added_script %}
+    <script type="application/javascript">
+        let csrftoken = Cookies.get('csrftoken');
+        $.ajaxSetup({
+            beforeSend: function (xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+                layer.load(0, {shade: false});
+            }
+        });
+        var order = [];
+        var data = "";
+        $(".multi-checkbox").on('change', function () { // always use change event
+            var idx = order.indexOf(this);
+            if (idx !== -1) {         // if already in array
+                order.splice(idx, 1); // make sure we remove it
+            }
+            if (this.checked) {    // if checked
+                order.push(this);  // add to end of array
+            }
+            // <------------------------------------For demonstration
+            data = $.map(order, function (elem) {
+                return $(elem).attr("id").replace("plan-", "");
+            });
+        });
+        $("#confirm-select-plan-convergence-line").on("click", function () {
+            if (data.length <= 1) {
+                layer.msg("请至少选择两个测试计划");
+            } else {
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'bugs_by_plan' %}",
+                    data: {"plans": JSON.stringify(data)},
+                    success: function (resultData) {
+                        layer.closeAll();
+                        if (resultData["status"] === 1) {
+                            let data = resultData["data"];
+                            Chart.defaults.global.defaultFontColor = 'white';
+                            // DOM is ready
+                            $(function () {
+                                drawLineChart(data.projects, data.highest, data.medium, data.low, data.lowest); // Line Chart
+                                $(window).resize(function () {
+                                    updateLineChart();
+                                });
+                            })
+                        } else {
+                            let result_message = resultData["msg"];
+                            layer.msg(result_message);
+                        }
+
+                    }
+                    ,
+                    error: function () {
+                        layer.closeAll();
+                        layer.msg("服务器异常，请稍后再试!");
+                    }
+                })
+                ;
+            }
+        });
+        $(".single-checkbox-level").on("click", function (e) {
+            $(".single-checkbox-level").attr("checked", false);
+            $(e.target).prop('checked', true);
+        });
+        $(".single-checkbox-level-label").on("click", function (e) {
+            e.preventDefault();
+            $(e.target).prev().click();
+        });
+        $(".single-checkbox-module").on("click", function (e) {
+            $(".single-checkbox-module").attr("checked", false);
+            $(e.target).prop('checked', true);
+        });
+        $(".single-checkbox-module-label").on("click", function (e) {
+            e.preventDefault();
+            $(e.target).prev().click();
+        });
+        $(".single-checkbox-execute").on("click", function (e) {
+            $(".single-checkbox-execute").attr("checked", false);
+            $(e.target).prop('checked', true);
+        });
+        $(".single-checkbox-execute-label").on("click", function (e) {
+            e.preventDefault();
+            $(e.target).prev().click();
+        });
+        $("#confirm-select-plan-level-pie").on("click", function () {
+            let p = $(".single-checkbox-level:checked");
+            if (p.length !== 1) {
+                layer.msg("请选择一个测试计划");
+            } else {
+                let p_id = $(p).attr("id").replace("plan-", "");
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'bugs_by_level' %}",
+                    data: {"plan": p_id},
+                    success: function (resultData) {
+                        layer.closeAll();
+                        if (resultData["status"] === 1) {
+                            let data = resultData["data"];
+                            Chart.defaults.global.defaultFontColor = 'white';
+                            // DOM is ready
+                            $(function () {
+                                drawPieChart(data); // Line Chart
+                            })
+                        } else {
+                            let result_message = resultData["msg"];
+                            layer.msg(result_message);
+                        }
+
+                    }
+                    ,
+                    error: function () {
+                        layer.msg("服务器异常，请稍后再试!");
+                    }
+                })
+                ;
+
+            }
+
+        });
+        $("#confirm-select-plan-level-bar").on("click", function () {
+            let p = $(".single-checkbox-module:checked");
+            if (p.length !== 1) {
+                layer.msg("请选择一个测试计划");
+            } else {
+                let p_id = $(p).attr("id").replace("plan-", "");
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'bugs_by_module' %}",
+                    data: {"plan": p_id},
+                    success: function (resultData) {
+                        layer.closeAll();
+                        if (resultData["status"] === 1) {
+                            let data = resultData["data"];
+                            Chart.defaults.global.defaultFontColor = 'white';
+                            // DOM is ready
+                            $(function () {
+                                drawBarChart(data.modules, data.modules_data); // Bar Chart
+                            })
+                        } else {
+                            let result_message = resultData["msg"];
+                            layer.msg(result_message);
+                        }
+
+                    }
+                    ,
+                    error: function () {
+                        layer.msg("服务器异常，请稍后再试!");
+                    }
+                });
+            }
+        });
+        $("#confirm-select-plan-execute-bar").on("click", function () {
+            let p = $(".single-checkbox-execute:checked");
+            if (p.length !== 1) {
+                layer.msg("请选择一个测试计划");
+            } else {
+                let p_id = $(p).attr("id").replace("plan-", "");
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'plan_execute_info' %}",
+                    data: {"plan": p_id},
+                    success: function (resultData) {
+                        layer.closeAll();
+                        if (resultData["status"] === 1) {
+                            let data = resultData["data"];
+                            Chart.defaults.global.defaultFontColor = 'white';
+                            // DOM is ready
+                            $(function () {
+                                let org_process_data = data.processes;
+                                let d = [];
+                                for(let i=0;i<org_process_data.length;i++){
+                                    d.push(parseFloat(org_process_data[i]));
+                                }
+                                drawExecuteBar(data.executors, data.bugs_count, d); // Bar Chart
+                            })
+                        } else {
+                            let result_message = resultData["msg"];
+                            layer.msg(result_message);
+                        }
+
+                    }
+                    ,
+                    error: function () {
+                        layer.msg("服务器异常，请稍后再试!");
+                    }
+                });
+            }
+        })
+    </script>
+{% endblock %}

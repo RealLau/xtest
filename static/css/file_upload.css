@@ -1,0 +1,59 @@
+.file-upload-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 80px;
+  height: 100%;
+  cursor: pointer;
+}
+.file-upload-wrapper:after {
+  content: attr(data-text);
+  font-size: 18px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 2px;
+  display: block;
+  pointer-events: none;
+  z-index: 20;
+  color: #999;
+  border-radius: 31px;
+  font-weight: 300;
+  margin-top: 30px;
+}
+.file-upload-wrapper:before {
+  content: 'Upload';
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-block;
+  background: #4daf7c;
+  color: #fff;
+  font-weight: 700;
+  z-index: 25;
+  font-size: 16px;
+  padding: 5px 15px;
+  text-transform: uppercase;
+  pointer-events: none;
+  margin-top: 30px;
+}
+.file-upload-wrapper:hover:before {
+  background: #3d8c63;
+}
+.file-upload-wrapper input {
+  opacity: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 99;
+  /*height: 40px;*/
+  margin: 0;
+  padding: 0;
+  display: block;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 31px;
+}
+.file-upload-field{
+  display: none;
+}

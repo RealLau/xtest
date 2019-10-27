@@ -1,0 +1,60 @@
+{% extends 'registration/login.html' %}
+{% block page_title %}Cypress-中国{% endblock %}
+{% block password_confirm %}
+    <div class="wrap-input100 validate-input" data-validate = "密码不能为空">
+                        <label for="password">
+                            <input id="password_confirm" class="input100" type="password" name="password_confirm" placeholder="重复密码" required>
+                        </label>
+                        <span class="focus-input100"></span>
+						<span class="symbol-input100">
+							<i class="fa fa-lock" aria-hidden="true"></i>
+						</span>
+					</div>
+                    {% endblock %}
+{% block forget_password %}
+{% endblock %}
+{% block login_or_sign_up %}
+                        <div class="text-center p-t-136">
+						<a class="txt2" href="{% url 'login' %}">
+							已有账户，去登录
+							<i class="fa fa-long-arrow-right m-l-5" aria-hidden="true"></i>
+						</a>
+					</div>
+                        {% endblock %}
+{% block validate_rule %}
+            $("#login_form").validate({
+            rules:{
+                username:{
+                    required:true,
+                    rangelength: [1,10],
+                },
+                password:{
+                    required: true,
+                    rangelength: [1,30]
+                },
+                password_confirm:{
+                    required: true,
+                    rangelength: [1,30],
+                    equalTo: "#password"
+                },
+
+            },
+            messages:{
+                username:{
+                    required: "用户名不能为空",
+                    rangelength: "用户名长度必须在1~10之间",
+                },
+                password: {
+                    required:"密码不能为空",
+                    rangelength: "密码长度必须在1~30之间"
+                },
+                password_confirm: {
+                    required:"密码不能为空",
+                    rangelength: "密码长度必须在1~30之间",
+                    equalTo: "两次输入密码不一致"
+                }
+
+            }
+            }
+        );
+            {% endblock %}

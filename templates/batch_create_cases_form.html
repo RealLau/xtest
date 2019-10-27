@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <link rel="stylesheet" href="/static/css/costom.css">
+
+</head>
+<body>
+<div class="center-div">
+    <form class="contact100-form validate-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="file-upload-wrapper" data-text="project avatar">
+        </div>
+        <input id="upload-file" name="file" type="file" class="file-upload-field" value="">
+        <div class="container-contact100-form-btn">
+            <input type="button" style="margin-top: 40px;margin-right: 50px" id="cancel" value="取消" class="operations">
+            <input type="submit" style="margin-top: 40px" id="submit" value="创建" class="operations">
+        </div>
+    </form>
+</div>
+</body>
+<script src="/static/js/js/jquery.min.js"></script>
+<script src="/static/js/layer/layer.js"></script>
+<script type="application/javascript">
+    $("#cancel").on("click", function () {
+        parent.close_pop();
+    });
+    $("form").submit(function (e) {
+        e.preventDefault();
+        if (document.getElementById("upload-file").files.length === 0) {
+            layer.msg("上传文件不能为空");
+        } else {
+            let formData = new FormData(this);
+            $.ajax({
+                type: "POST",
+                url: "{% url 'batch_create_case' %}",
+                cache: false,
+                data: formData,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                beforeSend: function () {
+                    parent.showLoadingAndHideIframe();
+                },
+                success: function (resultData) {
+                    let result_message = resultData["msg"];
+                    let result_status = resultData["status"];
+                    layer.msg(result_message);
+                    if (result_status === 1) {
+                        parent.closeAllAndRefresh();
+                    }
+
+                },
+                error: function () {
+                    layer.msg("服务器异常，请稍后再试!");
+                }
+            })
+        }
+    })
+</script>
+</html>

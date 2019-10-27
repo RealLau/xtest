@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>用例关键任务-选择任务</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/costom.css">
+
+</head>
+<body style="background-color: #6d8da6; margin-top: 20px;height: auto">
+<div style="margin: 0 auto;width: 300px">
+    <table class="task-select">
+        <thead>
+        <tr>
+            <th>选择</th>
+            <th>任务编号</th>
+            <th>归属计划</th>
+            <th>执行者</th>
+        </tr>
+        </thead>
+        <tbody>
+        <form>
+            {% for t in tasks %}
+                <tr>
+                    <td>
+                        <div class="radio">
+                            <label><input type="radio" id={{ t.pk }} name="task"></label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="radio">
+                            <label>{{ t.pk }}</label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="radiotext">
+                            <label for='regular'><input type="hidden" name="plan" value="{{ t.plan.pk }}">{{ t.plan.name }}</label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="radiotext">
+                            <label for='regular'><input type="hidden" name="executor" value="{{ t.executor.pk }}">{{ t.executor.username }}</label>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+
+        </form>
+        </tbody>
+    </table>
+</div>
+<div class="container-contact100-form-btn">
+    <button id="cancel-button" class="contact100-form-btn cancel-submit">
+        <span>
+            <i class="fa fa-remove m-r-6" aria-hidden="true"></i>
+            取消
+        </span>
+    </button>
+    <button class="contact100-form-btn confirm-select-task">
+        <span>
+            <i class="fa fa-arrow-right m-r-6" aria-hidden="true"></i>
+            关联
+        </span>
+    </button>
+</div>
+<script src="/static/js/js/jquery.min.js"></script>
+<script src="/static/js/layer/layer.js"></script>
+<script type="application/javascript">
+    $(document).ready(function () {
+        $("#cancel-button").click(function () {
+            parent.close_pop();
+        });
+        $(".confirm-select-task").click(function () {
+            let checkedTask = $("input[name='task']:checked");
+            let parent_td = $(checkedTask).parentsUntil("tr").last();
+            let task = parent_td.next().find("label").text();
+            let plan = parent_td.nextAll().find("input[name='plan']").val();
+            let executor = parent_td.nextAll().find("input[name='executor']").val();
+            if (task === null) {
+                layer.msg("请选择任务");
+            } else {
+                parent.associate_task(task, plan, executor);
+            }
+        });
+    });
+</script>
+</body>
+
+</html>

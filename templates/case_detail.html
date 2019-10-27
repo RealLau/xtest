@@ -1,0 +1,107 @@
+{% extends "Base/base.html" %}
+{% block shotcut_operation %}
+
+    <span class="item_create_info">点我<a href="{% url 'edit' item='4' pk=ca.pk %}"><i
+            class="fa fa-pencil-square operation_link"></i></a>修改此用例，或
+    <a href="{% url 'new' item='4' project_pk=ca.module.project.pk %}"><i class="fa fa-pencil operation_link"></i></a>创建新用例
+    </span>
+{% endblock %}
+{% block added_header %}
+    <link rel="stylesheet" type="text/css" href="/static/js/editor.md-master/css/editormd.min.css">
+{% endblock %}
+{% block main_content %}
+    <div class="custom-main">
+        <div class="col-12 tm-block-col">
+            <div class="tm-bg-primary-dark tm-block tm-block-taller tm-block-scroll">
+                <h2 class="tm-block-title">用例详情</h2>
+                <ol class="case_detail_ol">
+                    <li class="case_detail_li">
+                        <p class="case_detail_h4">所属项目</p>
+                        <p class="case_detail_p">{{ ca.module.project.name }}</p>
+                    </li>
+                    <li class="case_detail_li">
+                        <p class="case_detail_h4">模块</p>
+                        <p class="case_detail_p">{{ ca.module.name }}</p>
+                    </li>
+                    <li class="case_detail_li">
+                        <p class="case_detail_h4">标题</p>
+                        <p class="case_detail_p">{{ ca.title }}</p>
+                    </li>
+                    <li class="case_detail_li">
+                        <p class="case_detail_h4">描述</p>
+                        <p class="case_detail_p">{{ ca.desc }}</p>
+                    </li>
+                    <li class="case_detail_li">
+                        <p class="case_detail_h4">前提条件</p>
+                        <p class="case_detail_p">{{ ca.preconditions }}</p>
+                    </li>
+                    <li class="case_detail_li">
+                        <p class="case_detail_h4">步骤</p>
+                        <p class="case_detail_p">
+                        <div id="case_detail_steps" style="width: inherit;margin: 50px;">
+                            <label>
+                                <textarea style="display: none">{{ ca.steps }}</textarea>
+                            </label>
+                        </div>
+                    </li>
+                    <li class="case_detail_li">
+                        <p class="case_detail_h4">期望结果</p>
+                        <p class="case_detail_p">{{ ca.expectation }}</p>
+                    </li>
+                    <li class="case_detail_li">
+                        <p class="case_detail_h4">优先级</p>
+                        <p class="case_detail_p">{{ ca.get_priority_display }}</p>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    </div>
+{% endblock %}
+
+{% block added_script %}
+    <script src="/static/js/editor.md-master/lib/marked.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/prettify.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/raphael.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/underscore.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/sequence-diagram.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/flowchart.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/jquery.flowchart.min.js"></script>
+    <script src="/static/js/editor.md-master/editormd.min.js"></script>
+    <script type="application/javascript">
+        let case_detail_content;
+        $(function () {
+            case_detail_content = editormd.markdownToHTML("case_detail_steps", {//注意：这里是上面DIV的id
+                htmlDecode: "style,script,iframe",
+                emoji: true,
+                taskList: true,
+                tex: true, // 默认不解析
+                flowChart: true, // 默认不解析
+                sequenceDiagram: true, // 默认不解析
+                codeFold: true,
+            });
+        });
+        $(".remove_project").on("click", function () {
+            let p = $(this).attr("id");
+            console.log(p);
+            layer.msg("该项目下所有非公共用例将会被删除<br>确认删除吗?", {
+                btn: ["确认", "取消"],
+                time: 0,
+                yes: function () {
+                    $.ajax({
+                        type: "POST",
+                        url: "",
+                        success: function (resultData) {
+                            let result_message = resultData["msg"];
+                            layer.msg(result_message);
+                            window.location.href = "{% url 'project' %}";
+                        },
+                        error: function () {
+                            layer.msg("服务器异常，请稍后再试!");
+                        }
+                    });
+                }
+            })
+        })
+    </script>
+{% endblock %}

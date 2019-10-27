@@ -1,0 +1,41 @@
+{% extends "Base/base.html" %}
+
+{% block main_content %}
+    <div id="post_list" class="post_list">
+        <form method="get" action=".">
+            <input type="text" class="textbox" placeholder="Search" name="q">
+            <input title="Search" value="Go" type="submit" class="button">
+        </form>
+    </div>
+    {% if query %}
+        {% for result in page.object_list %}
+            <!-- Blog Post Start -->
+            <div class="col-md-12 blog-post">
+                <div class="post-title">
+                    <a class="no_text_decoration" href="{% url 'case_detail'%}?pk={{ result.object.pk }}"><h1>{{ result.object.title }}</h1></a>
+                </div>
+                <div class="post-info">
+                    <span>{{ result.object.last_update_time|date:"M-d-Y" }}  in <a class="no_text_decoration" href=""
+                                                                                target="_blank">{{ result.object.module.name }}</a></span>
+                </div>
+                <p class="truncate_words">{{ result.object.steps|truncatewords:20 }}</p>
+                <a class="no_text_decoration" href="{% url 'case_detail' %}?pk={{ result.object.pk }}">Read More</a>
+            </div>
+            <!-- Blog Post End -->
+        {% empty %}
+            <p class="center_p">No results found.</p>
+        {% endfor %}
+        {% if page.has_previous or page.has_next %}
+            <div>
+                {% if page.has_previous %}<a href="?q={{ query }}&page={{ page.previous_page_number }}">{% endif %}«
+                Previous{% if page.has_previous %}</a>{% endif %}
+                |
+                {% if page.has_next %}<a href="?q={{ query }}&page={{ page.next_page_number }}">{% endif %}Next »
+                {% if page.has_next %}</a>{% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        {# Show some example queries to run, maybe query syntax, something else? #}
+    {% endif %}
+
+{% endblock %}

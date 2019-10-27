@@ -1,0 +1,64 @@
+.blog-post {
+    border-top: 1px dashed #dedede;
+    border-bottom: 1px dashed #dedede;
+}
+
+.blog-post .post-title h1 {
+    color: white;
+    font-size: 35px;
+    line-height: 45px;
+    font-weight: 700;
+    margin-top: 24px;
+}
+
+.no_text_decoration {
+    color: white;
+}
+
+.no_text_decoration h1:hover {
+    color: yellowgreen;
+}
+
+.textbox {
+    min-height: 40px;
+    min-width: 300px;
+    outline: 0;
+    padding: 0 16px;
+    background: #2c3e50;
+}
+.textbox:focus{
+    background: white;
+}
+
+.post_list {
+}
+
+.post_list form {
+    display: inline-block;
+    outline: 0;
+    margin-bottom: 50px;
+}
+
+.post_list form > .button, .search-by-project-and-module > .button, .search-by-plan-and-executor>.button {
+    outline: 0;
+    background-color: #f5a623;
+    height: 40px;
+    width: 40px;
+    text-align: center;
+    border: 0;
+    color: #FFF;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: 16px;
+    text-rendering: auto;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    transition: background-color .4s ease;
+    cursor: pointer;
+}
+
+.center_p {
+    text-align: center
+}
+
+.search-by-project-and-module, .search-by-plan-and-executor {
+    margin-bottom: 25px
+}

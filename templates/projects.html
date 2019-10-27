@@ -1,0 +1,86 @@
+{% extends "Base/base.html" %}
+{% block shotcut_operation %}
+    {% if projects %}
+        <span class="item_create_info">点我<a href="{% url 'new' item='1' %}"><i
+                class="fa fa-pencil operation_link"></i></a>创建新项目
+    </span>
+    {% endif %}
+{% endblock %}
+{% block main_content %}
+    <div class="custom-main">
+        {% if projects %}
+            <div class="col-12 tm-block-col">
+                <div class="tm-bg-primary-dark tm-block tm-block-taller tm-block-scroll">
+                    <h2 class="tm-block-title">项目列表</h2>
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col">项目</th>
+                            <th scope="col">名称</th>
+                            <th scope="col">创建时间</th>
+                            <th scope="col" colspan="2">操作</th>
+                        </tr>
+                        </thead>
+                        {% csrf_token %}
+                        <tbody>
+                        {% for p in projects %}
+                            <tr class="row-detail">
+                                <td>
+                                    <img src="{{ p.avatar_url }}" alt="project avatar"
+                                         class="rounded-circle standard-image">
+                                </td>
+                                <td><b>{{ p.name }}</b></td>
+                                <td><b>{{ p.created_time | date}}</b></td>
+                                <td><a href="{% url 'edit' item='1' pk=p.pk %}"><i
+                                        class="fa fa-edit operation_link"></i></a></td>
+                                <td><a href="javascript:void(0)" class="remove_project" id="{{ p.pk }}"><i
+                                        class="fa fa-remove operation_link"></i></a></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        {% else %}
+            <div>
+                <p><img src="/static/images/img/nothing.png" alt="nothing-img"></p>
+                <span>还没有任何项目呢，请先创建<a href="{% url 'new' item='1' %}"><i
+                        class="fa fa-pencil fa-3x operation_link"></i></a>一个吧!</span>
+            </div>
+        {% endif %}
+    </div>
+    </div>
+{% endblock %}
+
+{% block added_script %}
+    <script type="application/javascript">
+        $(".remove_project").on("click", function () {
+            let p = $(this).attr("id");
+            layer.msg("该项目下所有用例将会被删除<br>确认删除吗?", {
+                btn: ["确认", "取消"],
+                time: 0,
+                yes: function () {
+                    $.ajax({
+                        type: "DELETE",
+                        url: "{% url 'project' %}",
+                        data: {"pk": p},
+                        success: function (resultData) {
+                            let result_message = resultData["msg"];
+                            layer.msg(result_message);
+                            let result_status = resultData["status"];
+                            if (result_status === 1) {
+                                window.location.href = "{% url 'project' %}";
+                            }
+                        },
+                        error: function () {
+                            layer.msg("服务器异常，请稍后再试!");
+                        }
+                    });
+                }
+            })
+        })
+
+
+    </script>
+{% endblock %}

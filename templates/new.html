@@ -1,0 +1,388 @@
+{% extends "Base/base.html" %}
+
+{% block shotcut_operation %}
+    {% if item == "case" and pro %}
+        <div class="header-tip-info">你正在为<a style="color: yellow"
+                                            href="{% url 'project' pk=pro.pk %}">{{ pro.name }}</a>创建测试用例
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block added_header %}
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/animate.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/hamburgers.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/animsition.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/select2.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/daterangepicker.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/util.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/file_upload.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/editor.md-master/css/editormd.min.css">
+    {% if item == "plan" %}
+        <link href="/static/js/dist/rome.css" rel="stylesheet">
+    {% endif %}
+{% endblock %}
+{% block main_content %}
+    <div class="custom-main">
+        <div class="wrap-contact100">
+            {% if item == 'project' %}
+                <form class="contact100-form validate-form" method="post" action="{% url 'project' %}"
+                      enctype="multipart/form-data">
+                    <div class="wrap-input100 validate-input" data-validate="Please enter project name">
+                        {% csrf_token %}
+                        <input class="input100" type="text" name="project_name" placeholder="项目名称*">
+                        
+                    </div>
+                    <div class="wrap-input100 validate-input">
+                    <textarea class="input100" name="project_desc" placeholder="描述"
+                              aria-label="optional"></textarea>
+                        
+                    </div>
+                    <div class="file-upload-wrapper" data-text="project avatar">
+                    </div>
+                    <input name="avatar" type="file" class="file-upload-field" value="">
+                    <div class="container-contact100-form-btn">
+                        <button class="contact100-form-btn">
+						<span>
+							<i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>
+							保存
+						</span>
+                        </button>
+                    </div>
+                </form>
+            {% elif item == 'case' %}
+                <form class="contact100-form validate-form" enctype="multipart/form-data">
+                    <div class="module_selector">
+                        <div class="select">
+                            <span>模块*<i style="color:red"></i></span>
+                        </div>
+
+                        <input type="hidden" name="module">
+                        <ul class="custom-dropdown-menu" style="display: none">
+                            {% for m in modules %}
+                                <li id="{{ m.pk }}">{{ m.name }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% csrf_token %}
+                    <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} title">
+                        <input class="input100" type="text" name="{{ item }}_title" placeholder="{{ item }}标题*">
+                        
+                    </div>
+                    <div class="wrap-input100 validate-input">
+                    <textarea class="input100" name="{{ item }}_desc" placeholder="描述"
+                              aria-label="optional"></textarea>
+                        
+                    </div>
+                    <div class="wrap-input100">
+                    <textarea class="input100" name="{{ item }}_preconditions" placeholder="前提条件"
+                              aria-label="preconditions"></textarea>
+                        
+                    </div>
+                    <div id="steps" data-validate="Please enter {{ item }} steps">
+                    <textarea class="input100" name="{{ item }}_steps" placeholder="步骤*" aria-label="optional"
+                              style="display: none"></textarea>
+                    </div>
+                    <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} expectation">
+                    <textarea class="input100" name="{{ item }}_expectation" placeholder="期望结果*"
+                              aria-label="expectation"></textarea>
+                        
+                    </div>
+                    <div class="priority_selector">
+                        <div class="priority_select">
+                            <span>优先级*<i style="color:red"></i></span>
+                        </div>
+                        <input type="hidden" name="case_priority">
+                        <ul class="priority-custom-dropdown-menu" style="display: none">
+                            <li id="H">High</li>
+                            <li id="M">Middle</li>
+                            <li id="L">Low</li>
+                        </ul>
+                    </div>
+                    <div class="container-contact100-form-btn">
+                        <button class="contact100-form-btn">
+						<span>
+							<i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>
+							保存
+						</span>
+                        </button>
+                    </div>
+                </form>
+            {% elif item == "module" %}
+                <form class="contact100-form validate-form" method="post" action="{% url 'module' %}"
+                      enctype="multipart/form-data">
+                    <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} name">
+                        {% csrf_token %}
+                        <input class="input100" type="text" name="{{ item }}_name" placeholder="模块名称*">
+                        
+                    </div>
+                    <div class="project_selector">
+                        <div class="project_select">
+                            <span>项目*</span>
+                        </div>
+                        <input type="hidden" name="project">
+                        <ul class="project-custom-dropdown-menu" style="display: none">
+                            {% for p in projects %}
+                                <li id="{{ p.pk }}">{{ p.name }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="container-contact100-form-btn">
+                        <button class="contact100-form-btn">
+						<span>
+							<i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>
+							保存
+						</span>
+                        </button>
+                    </div>
+                </form>
+            {% elif item == "plan" %}
+                <form class="contact100-form validate-form" enctype="multipart/form-data">
+                    <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} name">
+                        {% csrf_token %}
+                        <input class="input100" type="text" name="{{ item }}_code_name"
+                               placeholder="代号*">
+                        
+                    </div>
+                    <div class="project_selector separate-line-bottom">
+                        <label for="start_time">开始时间*</label>
+                        <input id="start_time" name="start_time" class="time_input" autocomplete="off">
+                        <label for="end_time" style="margin-left: 10px">结束时间*</label>
+                        <input id="end_time" name="end_time" class="time_input" autocomplete="off">
+                    </div>
+                    <div class="container-contact100-form-btn">
+                        <button id="cancel-button" class="contact100-form-btn cancel-submit" style="margin-top: 200px"
+                                type="reset">
+						<span>
+							<i class="fa fa-remove m-r-6" aria-hidden="true"></i>
+							取消
+						</span>
+                        </button>
+                        <button class="contact100-form-btn" style="margin-top: 200px; margin-left: 100px">
+						<span>
+							<i class="fa fa-arrow-right m-r-6" aria-hidden="true"></i>
+							保存
+						</span>
+                        </button>
+                        <span class="plan-procedure-tip">*Tip：创建测试计划后，别忘了关联测试人员和测试用例哦</span>
+                    </div>
+                </form>
+            {% endif %}
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block added_script %}
+    <script src="/static/js/animsition.min.js"></script>
+    <!--===============================================================================================-->
+    <script src="/static/js/js/popper.js"></script>
+    <!--===============================================================================================-->
+    <script src="/static/js/select2.min.js"></script>
+    <!--===============================================================================================-->
+    <script src="/static/js/daterangepicker.js"></script>
+    <!--===============================================================================================-->
+    <script src="/static/js/countdowntime.js"></script>
+    <!--===============================================================================================-->
+    <script src="/static/js/form.js"></script>
+    {% if item == "plan" %}
+        <script src="/static/js/dist/rome.js"></script>
+    {% endif %}
+    {% if item == "case" %}
+        <script src="/static/js/editor.md-master/editormd.min.js"></script>
+    {% endif %}
+    <script type="application/javascript">
+        {% if item == "plan" %}
+            let current_time = new Date($.now());
+            let plan_start_time = rome(start_time, options = {
+                "min": current_time,
+                "required": true
+            });
+            let plan_end_time = rome(end_time, options = {
+                "min": current_time,
+                "required": true
+            });
+            $("#cancel-button").on("click", function (e) {
+                e.preventDefault();
+                layer.confirm("确认放弃创建测试计划吗？", {
+                    btn: ['确认', '再考虑一下'] //按钮
+                }, function () {
+                    window.location.href = "{% url 'home' %}";
+                });
+            });
+            $("form").submit(function (e) {
+                e.preventDefault();
+                let format = "YYYY-MM-DD HH:mm:ss";
+                let plan_start_time_value = plan_start_time.getDateString(format);
+                let plan_end_time_value = plan_end_time.getDateString(format);
+                if (Date.parse(plan_start_time_value) > Date.parse(plan_end_time_value)) {
+                    layer.msg("开始时间不能大于结束时间");
+                } else {
+                    let formData = new FormData(this);
+                    for (var key of formData.entries()) {
+                        console.log(key[0] + ',' + key[1])
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "{% url 'plan' %}",
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        dataType: 'json',
+                        success: function (resultData) {
+                            let result_message = resultData["msg"];
+                            let result_status = resultData["status"];
+                            layer.msg(result_message);
+                            if (result_status === 1) {
+                                window.location.href = "/plan";
+                            }
+
+                        },
+                        error: function () {
+                            layer.msg("服务器异常，请稍后再试!");
+                        }
+                    })
+                }
+            });
+
+        {% endif %}
+        $(".file-upload-wrapper").on("click", function () {
+            $("input[name='avatar']").click();
+        });
+        $("form").on("change", ".file-upload-field", function () {
+            console.log($(this));
+            console.log($(this).prevUntil(".file-upload-wrapper"));
+            $(".file-upload-wrapper").attr("data-text", $(this).val().replace(/.*([\/\\])/, ''));
+        });
+        {% if item == "case" or item == "project" %}
+            {% if msg %}
+                layer.msg("{{msg}}");
+            {% endif %}
+            $(".select").click(function () {
+                let e = $(".custom-dropdown-menu");
+                if ($(e).css("display") === "none") {
+                    $(e).css("display", "block");
+                } else {
+                    $(e).css("display", "none");
+                }
+            });
+            $(".priority_select").click(function () {
+                let e = $(".priority-custom-dropdown-menu");
+                if ($(e).css("display") === "none") {
+                    $(e).css("display", "block");
+                } else {
+                    $(e).css("display", "none");
+                }
+            });
+
+            $("body").click(function (e) {
+                let selection_icon = $(".select,.priority_select");
+                let submenu = $(".custom-dropdown-menu, .priority-custom-dropdown-menu");
+                if (e.target === $(selection_icon)[0] && $($(submenu)[0]).is(':visible') || (e.target === $(selection_icon)[1] && $($(submenu)[1]).is(':visible'))) {
+                    $(submenu).css("display", "block");
+                } else {
+                    $(submenu).css("display", "none");
+                }
+            });
+
+            $('.module_selector .custom-dropdown-menu li').click(function () {
+                $(this).parents('.module_selector').find('span').text($(this).text());
+                $(this).parents('.module_selector').find('input').attr('value', $(this).attr('id'));
+            });
+            $('.priority_selector .priority-custom-dropdown-menu li').click(function () {
+                $(this).parents('.priority_selector').find('span').text($(this).text());
+                $(this).parents('.priority_selector').find('input').attr('value', $(this).attr('id'));
+            });
+        {% elif item == "module" %}
+            $(".project_select").click(function () {
+                let e = $(".project-custom-dropdown-menu");
+                if ($(e).css("display") === "none") {
+                    $(e).css("display", "block");
+                } else {
+                    $(e).css("display", "none");
+                }
+            });
+            $("body").click(function (e) {
+                let selection_icon = $(".project_select");
+                let submenu = $(".project-custom-dropdown-menu");
+                if (e.target === $(selection_icon)[0] && $(submenu).is(':visible')) {
+                    $(submenu).css("display", "block");
+                } else {
+                    $(submenu).css("display", "none");
+                }
+            });
+            $('.project_selector .project-custom-dropdown-menu li').click(function () {
+                $(this).parents('.project_selector').find('span').text($(this).text());
+                $(this).parents('.project_selector').find('input').attr('value', $(this).attr('id'));
+            });
+        {% endif %}
+    </script>
+    {% if item == "case" %}
+        <script type="text/javascript">
+            $(function () {
+                var case_editor = editormd("steps", {
+                    width: "100%",
+                    height: 300,
+                    placeholder: "步骤*",
+                    toolbarIcons: function () {
+                        return ["undo", "redo", "|", "bold", "hr", "|", "preview", "watch", "|", "list-ol", "list-ul", "link"]
+                    },
+                    path: "/static/js/editor.md-master/lib/"
+                });
+            });
+            $("form").submit(function (e) {
+                e.preventDefault();
+                let formData = new FormData(this);
+                for (var pair of formData.entries()) {
+                    if ((pair[0] !== "case_desc" && pair[0] !== "case_preconditions" && pair[0] !== "case_desc") && pair[1] === "") {
+                        if(pair[0]==="module"){
+                            $(".select>span>i").attr("class", "fa fa-info-circle");
+                        }
+                        if(pair[0]==="case_priority"){
+                            $(".priority_select>span>i").attr("class", "fa fa-info-circle");
+                        }
+                        layer.msg("请注意*项为必填项！");
+                        return;
+                    }
+                }
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'save_case' %}",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    dataType: 'json',
+                    success: function (resultData) {
+                        let result_message = resultData["msg"];
+                        let result_status = resultData["status"];
+                        let pro_pk = resultData["pro_pk"];
+                        if (result_status === 1) {
+                            let new_case_pk = resultData["new_case_pk"];
+                            layer.confirm(result_message, {
+                                btn: ['继续为该项目创建用例', '查看此用例', "关闭"] //按钮
+                            }, function () {
+                                window.location.href = "/new/4/"+pro_pk;
+                            }, function () {
+                                window.location.href = "{% url 'case_detail' %}?pk="+new_case_pk;
+                            }, function () {
+                                layer.closeAll();
+                            });
+                        }
+                    },
+                    error: function () {
+                        layer.msg("服务器异常，请稍后再试!");
+                    }
+                })
+
+            })
+        </script>
+
+    {% endif %}
+{% endblock %}

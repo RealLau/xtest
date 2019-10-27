@@ -1,0 +1,56 @@
+{% extends "Base/base.html" %}
+{% block added_header %}
+
+    <link rel="stylesheet" href="/static/js/jstree/dist/themes/default/style.min.css"/>
+{% endblock %}
+{% block shotcut_operation %}
+
+{% endblock %}
+{% block main_content %}
+    <div class="custom-main">
+        <div id="project-case-tree"></div>
+    </div>
+    <div class="center-div">
+        <button class="operations">关联到测试任务</button>
+    </div>
+{% endblock %}
+
+{% block added_script %}
+    <script src="/static/js/jstree/dist/jstree.min.js"></script>
+    <script type="application/javascript">
+        let data = '{{ all_data|escapejs }}';
+        let parsedData = JSON.parse(unescape(data.replace(/\\u/g, '%u')));
+        $('#project-case-tree').jstree({
+            'core': {
+                'data': parsedData
+            },
+            "plugins": [
+                "checkbox", "dnd", "search",
+                "state", "types", "contextmenu"
+            ],
+            "contextmenu": {
+                "items": function ($node) {
+                    var tree = $("#project-case-tree").jstree(true);
+                    return {
+                        "Detail": {
+                            "separator_before": false,
+                            "separator_after": false,
+                            "label": "查看详情",
+                            "action": function (obj) {
+                                let case_id = $node.id.replace("case", "");
+                                if (case_id.includes("module") || case_id.includes("project")) {
+                                    layer.msg("待实现");
+                                } else {
+                                    window.open("/case_detail/?pk=" + case_id);
+                                }
+                            }
+                        },
+                    };
+                }
+            },
+        });
+        $(".add-to-plan").bind("click", function () {
+            console.log($('#project-case-tree').jstree(true).get_selected())
+        })
+    </script>
+{% endblock %}

@@ -1,0 +1,244 @@
+{% extends "Base/base.html" %}
+{% block added_header %}
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/file_upload.css">
+    <link rel="stylesheet" href="/static/js/jstree/dist/themes/default/style.min.css"/>
+    <link rel="stylesheet" href="/static/css/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/editor.md-master/css/editormd.min.css">
+{% endblock %}
+
+{% block shotcut_operation %}
+{% endblock %}
+
+{% block main_content %}
+    <div class="custom-main">
+        <table style="width: 100%; height: 800px">
+            <thead>
+            <th>
+                任务用例
+            </th>
+            <th>
+                用例详情
+            </th>
+            </thead>
+            <tr>
+                <td>
+                    <div id="plan-task-user-case-tree" class="execution-tree" style="background-color: white;"></div>
+                </td>
+                <td style="width: 600px;height: 800px">
+                    <div class="col-12 tm-block-col">
+                        <div class="tm-bg-primary-dark tm-block tm-block-taller tm-block-scroll max-height execution-case-detail">
+                            <ol class="case_detail_ol">
+                                <li class="case_detail_li">
+                                    <p class="case_detail_h4">模块</p>
+                                    <p class="case_detail_module"></p>
+                                </li>
+                                <li class="case_detail_li">
+                                    <p class="case_detail_h4">标题</p>
+                                    <p class="case_detail_title"></p>
+                                </li>
+                                <li class="case_detail_li">
+                                    <p class="case_detail_h4">描述</p>
+                                    <p class="case_detail_desc"></p>
+                                </li>
+                                <li class="case_detail_li">
+                                    <p class="case_detail_h4">前提条件</p>
+                                    <p class="case_detail_preconditions"></p>
+                                </li>
+                                <li class="case_detail_li">
+                                    <p class="case_detail_h4">步骤</p>
+                                    <p class="case_detail_p">
+                                    <div id="layout">
+                                    </div>
+                                    </p>
+                                </li>
+                                <li class="case_detail_li">
+                                    <p class="case_detail_h4">期望结果</p>
+                                    <p class="case_detail_expectation"></p>
+                                </li>
+                                <li class="case_detail_li">
+                                    <p class="case_detail_h4">优先级</p>
+                                    <p class="case_detail_priority"></p>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <div class="wrap-contact100">
+            <form class="contact100-form validate-form" enctype="multipart/form-data">
+                <select id="result-status" class="alongside-select" name="result_status" style="margin-bottom: 30px">
+                    <option value="P">PASS</option>
+                    <option value="B">BLOCK</option>
+                    <option value="F">FAIL</option>
+                </select>
+                <input class="task_id" type="hidden" name="task_id" value="">
+                <input class="case_id" type="hidden" name="case_id" value="">
+                <div id="bug-info" class="wrap-input100 validate-input" style="margin-bottom: 1px;display: none">
+                    {% csrf_token %}
+                    <input class="input100" type="text" name="associate_bug" placeholder="关联Bug">
+                    <input class="bug-link" name="bug-link" value="" type="hidden">
+                </div>
+                <div class="container-contact100-form-btn">
+                    <button class="contact100-form-btn">
+						<span>
+							<i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>
+							提交
+						</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block added_script %}
+    <script src="/static/js/jstree/dist/jstree.min.js"></script>
+    <script type="application/javascript">
+        let data = '{{ all_data|escapejs }}';
+        let parsedData = JSON.parse(unescape(data.replace(/\\u/g, '%u')));
+        $('#plan-task-user-case-tree').jstree({
+            'core': {
+                'data': parsedData
+            },
+            "plugins": [
+                "dnd", "search", "search",
+                "state", "types"
+            ],
+        });
+        $('#plan-task-user-case-tree').on("changed.jstree", function (e, data) {
+            let case_text = data.selected[0];
+            if (case_text !== undefined) {
+                if (~case_text.indexOf("case")) {
+                    let case_id = case_text.replace(/case/, "");
+                    $.ajax({
+                        type: "GET",
+                        url: "{% url 'case_detail' %}?pk=" + case_id + "&json_type=1",
+                        success: function (resultData) {
+                            let result_message = resultData["msg"];
+                            if ($("#case_detail_steps").length !== 0) {
+                                $("#case_detail_steps").remove();
+                            }
+                            $("#layout").append("<div id=\"case_detail_steps\" style=\"width: inherit;margin: 50px;\"></div>");
+                            editormd.markdownToHTML("case_detail_steps", {//注意：这里是上面DIV的id
+                                htmlDecode: "style,script,iframe",
+                                emoji: true,
+                                taskList: true,
+                                tex: true, // 默认不解析
+                                flowChart: true, // 默认不解析
+                                sequenceDiagram: true, // 默认不解析
+                                codeFold: true,
+                                markdown: result_message.steps
+                            });
+                            $(".case_detail_module").text(result_message.module);
+                            $(".case_detail_title").text(result_message.title);
+                            $(".case_detail_desc").text(result_message.desc);
+                            $(".case_detail_preconditions").text(result_message.preconditions);
+                            $(".case_detail_expectation").text(result_message.expectation);
+                            $(".case_detail_priority").text(result_message.priority);
+                            $(".case_id").val(result_message.case_id);
+                        },
+                        error: function () {
+                            layer.msg("服务器异常，请稍后再试!");
+                        }
+                    });
+                }
+            }
+
+        });
+    </script>
+    <script src="/static/js/editor.md-master/lib/marked.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/prettify.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/raphael.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/underscore.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/sequence-diagram.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/flowchart.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/jquery.flowchart.min.js"></script>
+    <script src="/static/js/editor.md-master/editormd.min.js"></script>
+    <script src="/static/js/jquery-ui.js"></script>
+    <script type="application/javascript">
+        function load_steps(data) {
+            case_detail_content = editormd("case_detail_steps", {
+                width: "90%",
+                height: 640,
+                markdown: data,
+                path: '/static/js/editor.md-master/lib/'
+            });
+            return case_detail_content;
+        }
+
+        function remove_steps_editor(steps_editor) {
+            steps_editor.editor.remove();
+        }
+
+        /* 当按下的是数字或字母或'-'键时，查找Jira BUG */
+        var keys = [49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 189];
+        $("input[name='associate_bug']").keyup(function (event) {
+                let c = event.which;
+                if (keys.indexOf(c) !== -1) {
+                    $.ajax({
+                        type: "GET",
+                        url: "{% url 'get_jira_bugs' %}",
+                        success: function (resultData) {
+                            let result_issues_dict = JSON.parse(resultData["issues"]);
+                            let res = [];
+                            $.each(result_issues_dict, function (key, value) {
+                                res.push(key);
+                            });
+                            $("input[name='associate_bug']").autocomplete({
+                                source: res,
+                                select: function (event, ui) {
+                                    $(".bug-link").val(result_issues_dict[ui.item.value]);
+                                }
+                            });
+                        },
+                        error: function () {
+                            layer.msg("服务器异常，请稍后再试!");
+                        }
+                    });
+                }
+            }
+        );
+        $("form").submit(function (e) {
+            e.preventDefault();
+            let task_id_value = $("a[id*=task]").attr("id").replace(/task/, '').replace(/_anchor/, '');
+            $(".task_id").val(task_id_value);
+            let formData = new FormData(this);
+            for (var pair of formData.entries()) {
+                if (pair[0] === 'case_id' && pair[1] === "") {
+                    layer.msg("请选择测试用例");
+                    return;
+                }
+            }
+            $.ajax({
+                type: "POST",
+                url: "{% url 'execute_case' %}",
+                data: formData,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function (resultData) {
+                    let result_message = resultData["msg"];
+                    let result_status = resultData["status"];
+                    layer.msg(result_message);
+                    if (result_status === 1) {
+                        window.location.href = "{% url 'execution' %}";
+                    }
+                },
+                error: function () {
+                    layer.msg("服务器异常，请稍后再试!");
+                }
+            });
+        });
+    </script>
+    <script type="application/javascript">
+        $("#result-status").on('change', function () {
+            if ($(this).val() === "F") {
+                $("#bug-info").css("display", "block");
+            } else {
+                $("#bug-info").css("display", "none");
+            }
+        })
+    </script>
+{% endblock %}
