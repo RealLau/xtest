@@ -1,5 +1,5 @@
 # xtest
-A testing plaform for manage, case execution, execution analyze and Http service online debugging...
+  A testing plaform for manage case, case execution, execution analyze and Http service online debugging...
 # How to install
 - Python interpreter
 
