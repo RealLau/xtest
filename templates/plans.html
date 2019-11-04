@@ -65,7 +65,8 @@
         });
         let data = '{{ all_data|escapejs }}';
         let parsedData = JSON.parse(unescape(data.replace(/\\u/g, '%u')));
-        $('#all-plan-tree').jstree({
+        let tree = $("#all-plan-tree");
+        $(tree).jstree({
             'core': {
                 'data': parsedData,
                 'check_callback': true,
@@ -96,21 +97,28 @@
                                     if ($(steps_detail).length !== 0) {
                                         $(steps_detail).remove();
                                     }
-                                    let html_source = '<div class="select center-div" for="users">' +
-                                        '<select id="users" name="users">' +
-                                        '<option value="" selected disabled hidden>选择执行者</option>' +
-                                        '</div>';
+                                    let html_source = '<form class="contact100-form validate-form" enctype="multipart/form-data">' +
+                                        '{% csrf_token %}\n' +
+                                        '<input type="hidden" name="plan" value="' + plan_id + '">' +
+                                        '<div class="select center-div" for="users">' +
+                                        '<select id="user" name="user">' +
+                                        '<option value="" selected disabled hidden>选择执行者</option></select>' +
+                                        '</div>' +
+                                        '<div class="center-div">' +
+                                        '<button style="margin-top: 200px;background-color: #f5a623;padding: 0 20px;color: white;font-family: Ubuntu-Bold;">新增</button>' +
+                                        '</div>' +
+                                        '</form>';
                                     $("#plan-task-case-form").append(html_source);
                                     $.ajax({
                                         type: "GET",
-                                        url: "{% url 'users' %}",
+                                        url: "{% url 'users' %}?not_has_task=1",
                                         success: function (resultData) {
                                             layer.closeAll();
                                             let status = resultData.status;
-                                            if(status===1){
+                                            if (status === 1) {
                                                 let result_data = resultData.data;
-                                                for(let i=0;i<result_data.length;i++){
-                                                    $("#users").append(new Option(result_data[i].name, result_data[i].id));
+                                                for (let i = 0; i < result_data.length; i++) {
+                                                    $("#user").append(new Option(result_data[i].name, result_data[i].id));
                                                 }
                                             }
                                         },
@@ -118,7 +126,99 @@
                                             layer.closeAll();
                                             layer.msg("服务器异常，请稍后再试!");
                                         }
-                                    })
+                                    });
+                                    $("form").submit(function (e) {
+                                        e.preventDefault();
+                                        let formData = new FormData(this);
+                                        $.ajax({
+                                            type: "POST",
+                                            url: "{% url 'task' %}",
+                                            data: formData,
+                                            contentType: false,
+                                            processData: false,
+                                            dataType: 'json',
+                                            success: function (resultData) {
+                                                layer.closeAll();
+                                                let result_message = resultData["msg"];
+                                                let result_status = resultData["status"];
+                                                let result_data = resultData["data"];
+                                                if (result_status === 1) {
+                                                    $(tree).jstree('create_node', $node, {
+                                                        "id": "task" + result_data.task,
+                                                        "text": result_data.user,
+                                                        "icon": result_data.avatar
+                                                    }, "last", false, false);
+                                                    $(tree).jstree(true).deselect_node($node);
+                                                    $(tree).jstree(true).select_node("task" + result_data.task);
+                                                    $.ajax({
+                                                        type: "GET",
+                                                        url: "{% url 'task' %}?pk=" + result_data.task,
+                                                        success: function (resultData) {
+                                                            layer.closeAll();
+                                                            let result_data = resultData["data"];
+                                                            let status = resultData.status;
+                                                            if (status === 1) {
+                                                                let case_detail_or_edit_form = $(".case_detail_ol,form, .select");
+                                                                if ($(case_detail_or_edit_form).length !== 0) {
+                                                                    $(case_detail_or_edit_form).remove();
+                                                                }
+
+                                                                let steps_detail = $("#case_detail_steps");
+                                                                if ($(steps_detail).length !== 0) {
+                                                                    $(steps_detail).remove();
+                                                                }
+                                                                let html_source = '<ol class="case_detail_ol">\n' +
+                                                                    '                                <li class="case_detail_li">\n' +
+                                                                    '                                    <p class="case_detail_h4">执行者</p>\n' +
+                                                                    '                                    <p class="case_detail_desc"></p>\n' +
+                                                                    '                                </li>\n' +
+                                                                    '                                <li class="case_detail_li">\n' +
+                                                                    '                                    <p class="case_detail_h4">用例总计</p>\n' +
+                                                                    '                                    <p class="case_detail_preconditions">' +
+                                                                    '</p>' +
+                                                                    '                                </li>\n' +
+                                                                    '                                <li class="case_detail_li">\n' +
+                                                                    '                                    <p class="case_detail_h4">进度</p>\n' +
+                                                                    '                                    <p class="case_detail_expectation"></p>\n' +
+                                                                    '                                </li>\n' +
+                                                                    '                                <li class="case_detail_li">\n' +
+                                                                    '                                    <p class="case_detail_h4">BUG总计</p>\n' +
+                                                                    '                                    <p class="case_detail_priority"></p>\n' +
+                                                                    '                                </li>\n' +
+                                                                    '                            </ol>';
+                                                                $("#plan-task-case-form").append(html_source);
+                                                                $(".case_detail_desc").text(result_data.executor);
+                                                                if (result_data.cases === 0) {
+                                                                    $(".case_detail_preconditions").append("<a class=\"operation_link associate_case_with_task\" href=>0 - (去关联)</a>");
+                                                                    $(".associate_case_with_task").on("click", function () {
+                                                                        let win = window.open("{% url 'list_case' %}", "_blank");
+                                                                        win.focus();
+                                                                    });
+                                                                } else {
+                                                                    $(".case_detail_preconditions").text(result_data.cases);
+                                                                }
+                                                                $(".case_detail_expectation").text(result_data.process);
+                                                                $(".case_detail_priority").text(result_data.bugs);
+                                                            }
+
+                                                        },
+                                                        error: function () {
+                                                            layer.closeAll();
+                                                            layer.msg("服务器异常，请稍后再试!");
+                                                        }
+                                                    });
+                                                    layer.msg("添加任务成功!");
+
+                                                } else {
+                                                    layer.msg(result_message);
+                                                }
+                                            },
+                                            error: function () {
+                                                layer.msg("服务器异常，请稍后再试!");
+                                            }
+                                        })
+                                    });
+
                                 }
                             },
                             "Detail": {
@@ -196,17 +296,20 @@
 
                                     let data = '<form class="contact100-form validate-form" enctype="multipart/form-data">' +
                                         '<input type=hidden name="pk" id="plan_pk">' +
-                                        '                    <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} name">' +
-                                        '                        {% csrf_token %}' +
-                                        '                        <input class="input100" type="text" name="plan_name"' +
-                                        '                               placeholder="代号*">' +
-                                        '                        ' +
-                                        '                    </div>' +
-                                        '                    <div class="project_selector separate-line-bottom">' +
-                                        '                        <label for="start_time">开始时间*</label>' +
-                                        '                        <input id="start_time" name="start_time" class="time_input" autocomplete="off">' +
-                                        '                        <label for="end_time" style="margin-left: 10px">结束时间*</label>' +
-                                        '                        <input id="end_time" name="end_time" class="time_input" autocomplete="off">' +
+                                        '<div class="project_selector separate-line-bottom">\n' +
+                                        '                        <p>\n' +
+                                        '                            {% csrf_token %}\n' +
+                                        '                            <label for="plan_code_name">计划代号*:</label>\n' +
+                                        '                            <input id="plan_code_name" type="text" name="plan_code_name" autocomplete="off" style="text-align:center">\n' +
+                                        '                        </p>\n' +
+                                        '                        <p>\n' +
+                                        '                            <label for="start_time">开始时间*:</label>\n' +
+                                        '                            <input id="start_time" name="start_time" class="time_input" autocomplete="off">\n' +
+                                        '                        </p>\n' +
+                                        '                        <p>\n' +
+                                        '                            <label for="end_time">结束时间*:</label>\n' +
+                                        '                            <input id="end_time" name="end_time" class="time_input" autocomplete="off">\n' +
+                                        '                        </p>\n' +
                                         '                    </div>' +
                                         '                    <div class="center-div">' +
                                         '                        <button style="margin-top: 200px;background-color: #f5a623;padding: 0 20px;color: white;font-family: Ubuntu-Bold;">更新' +
@@ -222,7 +325,7 @@
                                             let result_data = resultData["data"];
                                             let status = resultData.status;
                                             if (status === 1) {
-                                                $("input[name='plan_name']").val(result_data.name);
+                                                $("input[name='plan_code_name']").val(result_data.name);
                                                 $("#plan_pk").val(plan_id);
                                                 let plan_start_time = rome(start_time, options = {
                                                     "initialValue": result_data.start_time,
@@ -297,6 +400,7 @@
                                                     $(".case_detail_preconditions").text(result_data.process);
                                                     $(".case_detail_expectation").text(result_data.bugs);
                                                     $(".case_detail_priority").text(result_data.executors.join(", "));
+                                                    $("#all-plan-tree").jstree('rename_node', $node, result_data.name);
                                                     layer.msg("更新成功");
                                                 } else {
                                                     layer.msg(result_message);
@@ -315,7 +419,6 @@
                                 "label": "删除",
                                 "icon": "/static/images/img/delete.png",
                                 "action": function (obj) {
-                                    let case_id = item_id.replace("case", "");
                                     layer.msg("确认删除此测试计划吗?", {
                                         btn: ["确认", "取消"],
                                         time: 0,
@@ -342,14 +445,24 @@
                             },
                         };
                     } else if ((item_id.includes("task"))) {
+                        let task_id = item_id.replace("task", "");
                         return {
+                            "New": {
+                                "separator_before": false,
+                                "separator_after": false,
+                                "label": "用例",
+                                "icon": "/static/images/img/add.png",
+                                "action": function (obj) {
+                                    let win = window.open("{% url 'list_case' %}", "_blank");
+                                    win.focus();
+                                }
+                            },
                             "Detail": {
                                 "separator_before": false,
                                 "separator_after": false,
                                 "label": "详情",
                                 "icon": "/static/images/img/info.png",
                                 "action": function (obj) {
-                                    let task_id = item_id.replace("task", "");
                                     $.ajax({
                                         type: "GET",
                                         url: "{% url 'task' %}?pk=" + task_id,
@@ -388,7 +501,15 @@
                                                     '                            </ol>';
                                                 $("#plan-task-case-form").append(html_source);
                                                 $(".case_detail_desc").text(result_data.executor);
-                                                $(".case_detail_preconditions").text(result_data.cases);
+                                                if (result_data.cases === 0) {
+                                                    $(".case_detail_preconditions").append("<a class=\"operation_link associate_case_with_task\" href=>0 - (去关联)</a>");
+                                                    $(".associate_case_with_task").on("click", function () {
+                                                        let win = window.open("{% url 'list_case' %}", "_blank");
+                                                        win.focus();
+                                                    });
+                                                } else {
+                                                    $(".case_detail_preconditions").text(result_data.cases);
+                                                }
                                                 $(".case_detail_expectation").text(result_data.process);
                                                 $(".case_detail_priority").text(result_data.bugs);
                                             }
@@ -407,71 +528,42 @@
                                 "label": "编辑",
                                 "icon": "/static/images/img/edit.png",
                                 "action": function (obj) {
-                                    let case_id = item_id.replace("case", "");
-                                    let case_detail_or_edit_form = $(".case_detail_ol, .module_detail_ol, .project_detail_ol, form");
+                                    let case_detail_or_edit_form = $(".case_detail_ol,form, .select");
                                     if ($(case_detail_or_edit_form).length !== 0) {
                                         $(case_detail_or_edit_form).remove();
                                     }
 
-                                    let data = '<form class="contact100-form validate-form" enctype="multipart/form-data" id="edit-case-form">\n' +
-                                        '    <div class="wrap-input100 validate-input" data-validate="Please enter case title">\n' +
-                                        '        <input class="input100" type="text" name="case_title" placeholder="标题*">\n' +
-                                        '    </div>\n' +
-                                        '<input class="input100" name="case_pk" type="hidden" value="' + case_id + '"' + '>' +
-                                        '    <div class="wrap-input100 validate-input">\n' +
-                                        '                    <textarea class="input100" name="case_desc" placeholder="描述"\n' +
-                                        '                              aria-label="optional"></textarea>\n' +
-                                        '    </div>\n' +
-                                        '    <div class="wrap-input100">\n' +
-                                        '                    <textarea class="input100" name="case_preconditions" placeholder="前提条件"\n' +
-                                        '                              aria-label="preconditions"></textarea>\n' +
-                                        '    </div>\n' +
-                                        '    <div id="steps" data-validate="Please enter case steps">\n' +
-                                        '                    <textarea class="input100" name="case_steps" placeholder="步骤*" aria-label="optional"\n' +
-                                        '                              style="display: none"></textarea>\n' +
-                                        '    </div>\n' +
-                                        '    <div class="wrap-input100 validate-input" data-validate="Please enter case expectation">\n' +
-                                        '                    <textarea class="input100" name="case_expectation" placeholder="期望结果*"\n' +
-                                        '                              aria-label="expectation"></textarea>\n' +
-                                        '    </div>\n' +
-                                        '<label>\n' +
-                                        '                    <select id="case_priority_value" class="custom-select" form="edit-case-form" name="case_priority">\n' +
-                                        '                      <option value="H">High</option>\n' +
-                                        '                      <option value="M">Middle</option>\n' +
-                                        '                      <option value="L">Low</option>\n' +
-                                        '                    </select>\n' +
-                                        '                </label>' +
-                                        '    <div class="container-contact100-form-btn">\n' +
-                                        '        <button class="operations">\n' +
-                                        '\t\t\t\t\t\t<span>\n' +
-                                        '\t\t\t\t\t\t\t<i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>\n' +
-                                        '\t\t\t\t\t\t\t保存\n' +
-                                        '\t\t\t\t\t\t</span>\n' +
-                                        '        </button>\n' +
-                                        '    </div>\n' +
+                                    let steps_detail = $("#case_detail_steps");
+                                    if ($(steps_detail).length !== 0) {
+                                        $(steps_detail).remove();
+                                    }
+                                    let html_source = '<form class="contact100-form validate-form" enctype="multipart/form-data">' +
+                                        '{% csrf_token %}\n' +
+                                        '<input type="hidden" name="pk" value="' + task_id + '">' +
+                                        '<div class="select center-div" for="users">' +
+                                        '<select id="user" name="user">' +
+                                        '<option value="" selected disabled hidden>选择执行者</option></select>' +
+                                        '</div>' +
+                                        '<div class="center-div">' +
+                                        '<button style="margin-top: 200px;background-color: #f5a623;padding: 0 20px;color: white;font-family: Ubuntu-Bold;">变更</button>' +
+                                        '</div>' +
                                         '</form>';
-                                    $("#case-detail-or-edit-or-new-case-form").append(data);
+                                    $("#plan-task-case-form").append(html_source);
                                     $.ajax({
                                         type: "GET",
-                                        url: "{% url 'case_detail' %}?pk=" + case_id + "&json_type=1",
+                                        url: "{% url 'users' %}",
                                         success: function (resultData) {
-                                            var case_editor = editormd("steps", {
-                                                width: "100%",
-                                                height: 300,
-                                                placeholder: "步骤*",
-                                                toolbarIcons: function () {
-                                                    return ["undo", "redo", "|", "bold", "hr", "|", "preview", "watch", "|", "list-ol", "list-ul", "link"]
-                                                },
-                                                markdown: resultData.msg.steps,
-                                                path: "/static/js/editor.md-master/lib/"
-                                            });
-                                            $("input[name='case_title']").val(resultData.msg.title);
-                                            $("textarea[name='case_desc']").val(resultData.msg.desc);
-                                            $("textarea[name='case_preconditions']").val(resultData.msg.preconditions);
-                                            $("textarea[name='case_expectation']").val(resultData.msg.expectation);
-                                            $("#case_priority_value").val(resultData.msg.priority);
+                                            layer.closeAll();
+                                            let status = resultData.status;
+                                            if (status === 1) {
+                                                let result_data = resultData.data;
+                                                for (let i = 0; i < result_data.length; i++) {
+                                                    $("#user").append(new Option(result_data[i].name, result_data[i].id));
+                                                }
+                                            }
                                         },
                                         error: function () {
+                                            layer.closeAll();
                                             layer.msg("服务器异常，请稍后再试!");
                                         }
                                     });
@@ -480,71 +572,21 @@
                                         let formData = new FormData(this);
                                         $.ajax({
                                             type: "POST",
-                                            url: "{% url 'save_case' %}",
+                                            url: "{% url 'task' %}",
                                             data: formData,
                                             contentType: false,
                                             processData: false,
                                             dataType: 'json',
                                             success: function (resultData) {
+                                                layer.closeAll();
                                                 let result_message = resultData["msg"];
+                                                let result_message_reason = resultData["reason"];
                                                 let result_status = resultData["status"];
                                                 if (result_status === 1) {
-                                                    let case_detail_or_edit_form = $(".case_detail_ol, .module_detail_ol, .project_detail_ol, form");
-                                                    if ($(case_detail_or_edit_form).length !== 0) {
-                                                        $(case_detail_or_edit_form).remove();
-                                                    }
-                                                    let html_source = '<ol class="case_detail_ol">\n' +
-                                                        '                                <li class="case_detail_li">\n' +
-                                                        '                                    <p class="case_detail_h4">标题</p>\n' +
-                                                        '                                    <p class="case_detail_title"></p>\n' +
-                                                        '                                </li>\n' +
-                                                        '                                <li class="case_detail_li">\n' +
-                                                        '                                    <p class="case_detail_h4">描述</p>\n' +
-                                                        '                                    <p class="case_detail_desc"></p>\n' +
-                                                        '                                </li>\n' +
-                                                        '                                <li class="case_detail_li">\n' +
-                                                        '                                    <p class="case_detail_h4">前提条件</p>\n' +
-                                                        '                                    <p class="case_detail_preconditions">' +
-                                                        '</p>' +
-                                                        '                                </li>\n' +
-                                                        '                                <li class="case_detail_li">\n' +
-                                                        '                                    <p class="case_detail_h4">步骤</p>\n' +
-                                                        '                                    <p class="case_detail_p">\n' +
-                                                        '                                    </p><div id="layout">\n' +
-                                                        '                                    </div>\n' +
-                                                        '                                    <p></p>\n' +
-                                                        '                                </li>\n' +
-                                                        '                                <li class="case_detail_li">\n' +
-                                                        '                                    <p class="case_detail_h4">期望结果</p>\n' +
-                                                        '                                    <p class="case_detail_expectation"></p>\n' +
-                                                        '                                </li>\n' +
-                                                        '                                <li class="case_detail_li">\n' +
-                                                        '                                    <p class="case_detail_h4">优先级</p>\n' +
-                                                        '                                    <p class="case_detail_priority"></p>\n' +
-                                                        '                                </li>\n' +
-                                                        '                            </ol>';
-                                                    $("#case-detail-or-edit-or-new-case-form").append(html_source);
-                                                    let data = resultData["data"];
-                                                    $("#layout").append("<div id=\"case_detail_steps\" style=\"width: inherit;margin: 50px;\"></div>");
-                                                    editormd.markdownToHTML("case_detail_steps", {//注意：这里是上面DIV的id
-                                                        htmlDecode: "style,script,iframe",
-                                                        emoji: true,
-                                                        taskList: true,
-                                                        tex: true, // 默认不解析
-                                                        flowChart: true, // 默认不解析
-                                                        sequenceDiagram: true, // 默认不解析
-                                                        codeFold: true,
-                                                        markdown: data.case_steps
-                                                    });
-                                                    $(".case_detail_title").text(data.case_title);
-                                                    $(".case_detail_desc").text(data.case_desc);
-                                                    $(".case_detail_preconditions").text(data.case_preconditions);
-                                                    $(".case_detail_expectation").text(data.case_expectation);
-                                                    $(".case_detail_priority").text(data.case_priority);
-                                                    $("#all-case-tree").jstree('rename_node', $node, data.case_title);
                                                     layer.msg(result_message);
+                                                    window.location.href = "{% url 'plan' %}";
                                                 } else {
-                                                    layer.msg(result_message);
+                                                    layer.msg(result_message + ": " + result_message_reason);
                                                 }
                                             },
                                             error: function () {
@@ -552,6 +594,7 @@
                                             }
                                         })
                                     });
+
                                 }
                             },
                             "delete": {
@@ -560,21 +603,20 @@
                                 "label": "删除",
                                 "icon": "/static/images/img/delete.png",
                                 "action": function (obj) {
-                                    let case_id = item_id.replace("case", "");
-                                    layer.msg("确认删除此用例吗?", {
+                                    layer.msg("确认删除此任务吗?", {
                                         btn: ["确认", "取消"],
                                         time: 0,
                                         yes: function () {
                                             $.ajax({
                                                 type: "DELETE",
-                                                url: "{% url 'remove_case' %}",
-                                                data: {"pk": case_id},
+                                                url: "{% url 'task' %}",
+                                                data: {"pk": task_id},
                                                 success: function (resultData) {
                                                     let result_message = resultData["msg"];
                                                     layer.msg(result_message);
                                                     let result_status = resultData["status"];
                                                     if (result_status === 1) {
-                                                        window.location.href = "{% url 'list_case' %}";
+                                                        window.location.href = "{% url 'plan' %}";
                                                     }
                                                 },
                                                 error: function () {
@@ -586,6 +628,114 @@
                                 }
                             },
                         };
+                    } else if (item_id.includes("project") || item_id.includes("module") || item_id.includes("case")) {
+                        return {
+                            "Delete": {
+                                "separator_before": false,
+                                "separator_after": false,
+                                "label": "删除",
+                                "icon": "/static/images/img/delete.png",
+                                "action": function (obj) {
+                                    if (item_id.includes("project")) {
+                                        let s = $(tree).jstree("get_selected");
+                                        if (s.length > 1) {
+                                            layer.msg("请只选择一个项目进行去关联!");
+                                        } else {
+                                            let t = s[0].replace("project", "");
+                                            let project_id = t.split("user")[0];
+                                            let user_id = t.split("user")[1];
+                                            let parent_total_id_string = $(tree).jstree("get_parent", s);
+                                            let task_id = parent_total_id_string.replace("task", "");
+                                            $.ajax({
+                                                type: "POST",
+                                                url: "{% url 'remove_cases_from_plan' %}",
+                                                data: {
+                                                    "param": "project",
+                                                    "param_id": project_id,
+                                                    "user_id": user_id,
+                                                    "task_id": task_id
+                                                },
+                                                success: function (resultData) {
+                                                    let result_message = resultData["msg"];
+                                                    layer.msg(result_message);
+                                                    let result_status = resultData["status"];
+                                                    if (result_status === 1) {
+                                                        window.location.href = "{% url 'plan' %}";
+                                                    }
+                                                },
+                                                error: function () {
+                                                    layer.msg("服务器异常，请稍后再试!");
+                                                }
+                                            });
+
+                                        }
+                                    } else if (item_id.includes("module")) {
+                                        let s = $(tree).jstree("get_selected");
+                                        if (s.length > 1) {
+                                            layer.msg("请只选择一个模块进行去关联!");
+                                        } else {
+                                            let t = s[0].replace("module", "");
+                                            let module_id = t.split("user")[0];
+                                            let user_id = t.split("user")[1];
+                                            let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", s));
+                                            let task_id = parent_total_id_string.replace("task", "");
+                                            $.ajax({
+                                                type: "POST",
+                                                url: "{% url 'remove_cases_from_plan' %}",
+                                                data: {
+                                                    "param": "module",
+                                                    "param_id": module_id,
+                                                    "user_id": user_id,
+                                                    "task_id": task_id
+                                                },
+                                                success: function (resultData) {
+                                                    let result_message = resultData["msg"];
+                                                    layer.msg(result_message);
+                                                    let result_status = resultData["status"];
+                                                    if (result_status === 1) {
+                                                        window.location.href = "{% url 'plan' %}";
+                                                    }
+                                                },
+                                                error: function () {
+                                                    layer.msg("服务器异常，请稍后再试!");
+                                                }
+                                            });
+
+                                        }
+                                    } else if (item_id.includes("case")) {
+                                        let s = $(tree).jstree("get_selected");
+                                        let cases_ids = [];
+                                        for(var i=0;i<s.length;i++){cases_ids.push(s[i].replace("case", ""));}
+                                        let one_of_the_module = $(tree).jstree("get_parent", $node);
+                                        let user_id = one_of_the_module.replace("module", "").split("user")[1];
+                                        let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", one_of_the_module));
+                                        let task_id = parent_total_id_string.replace("task", "");
+                                        $.ajax({
+                                                type: "POST",
+                                                url: "{% url 'remove_cases_from_plan' %}",
+                                                data: {
+                                                    "param": "case",
+                                                    "param_id": JSON.stringify(cases_ids),
+                                                    "user_id": user_id,
+                                                    "task_id": task_id
+                                                },
+                                                success: function (resultData) {
+                                                    let result_message = resultData["msg"];
+                                                    layer.msg(result_message);
+                                                    let result_status = resultData["status"];
+                                                    if (result_status === 1) {
+                                                        window.location.href = "{% url 'plan' %}";
+                                                    }
+                                                },
+                                                error: function () {
+                                                    layer.msg("服务器异常，请稍后再试!");
+                                                }
+                                            });
+
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
