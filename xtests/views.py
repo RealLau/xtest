@@ -614,6 +614,7 @@ def bugs_by_plan(request):
         res = {}
         jira_client = get_jira_client()
         highest_list = []
+        high_list = []
         medium_list = []
         low_list = []
         lowest_list = []
@@ -624,6 +625,7 @@ def bugs_by_plan(request):
             q = ~Q(associate_bug='') & Q(plan=p)
             bugs = CaseRecord.objects.values_list('associate_bug', flat=True).filter(q)
             highest = 0
+            high = 0
             medium = 0
             low = 0
             lowest = 0
@@ -632,6 +634,8 @@ def bugs_by_plan(request):
                 issue_priority = issue.fields.priority.name
                 if issue_priority == "Highest":
                     highest += 1
+                elif issue_priority == "High":
+                    high += 1
                 elif issue_priority == "Medium":
                     medium += 1
                 elif issue_priority == "Low":
@@ -639,12 +643,14 @@ def bugs_by_plan(request):
                 elif issue_priority == "Lowest":
                     lowest += 1
             projects.append(p_name)
+            high_list.append(high)
             highest_list.append(highest)
             medium_list.append(medium)
             low_list.append(low)
             lowest_list.append(lowest)
         res["projects"] = projects
         res["highest"] = highest_list
+        res["high"] = high_list
         res["medium"] = medium_list
         res["low"] = low_list
         res["lowest"] = lowest_list
@@ -662,6 +668,7 @@ def bugs_by_level(request):
         jira_client = get_jira_client()
         res = []
         highest = 0
+        high = 0
         medium = 0
         low = 0
         lowest = 0
@@ -672,11 +679,14 @@ def bugs_by_level(request):
                 highest += 1
             elif issue_priority == "Medium":
                 medium += 1
+            elif issue_priority == "High":
+                high += 1
             elif issue_priority == "Low":
                 low += 1
             elif issue_priority == "Lowest":
                 lowest += 1
         res.append(highest)
+        res.append(high)
         res.append(medium)
         res.append(low)
         res.append(lowest)

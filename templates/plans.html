@@ -636,103 +636,112 @@
                                 "label": "删除",
                                 "icon": "/static/images/img/delete.png",
                                 "action": function (obj) {
-                                    if (item_id.includes("project")) {
-                                        let s = $(tree).jstree("get_selected");
-                                        if (s.length > 1) {
-                                            layer.msg("请只选择一个项目进行去关联!");
-                                        } else {
-                                            let t = s[0].replace("project", "");
-                                            let project_id = t.split("user")[0];
-                                            let user_id = t.split("user")[1];
-                                            let parent_total_id_string = $(tree).jstree("get_parent", s);
-                                            let task_id = parent_total_id_string.replace("task", "");
-                                            $.ajax({
-                                                type: "POST",
-                                                url: "{% url 'remove_cases_from_plan' %}",
-                                                data: {
-                                                    "param": "project",
-                                                    "param_id": project_id,
-                                                    "user_id": user_id,
-                                                    "task_id": task_id
-                                                },
-                                                success: function (resultData) {
-                                                    let result_message = resultData["msg"];
-                                                    layer.msg(result_message);
-                                                    let result_status = resultData["status"];
-                                                    if (result_status === 1) {
-                                                        window.location.href = "{% url 'plan' %}";
-                                                    }
-                                                },
-                                                error: function () {
-                                                    layer.msg("服务器异常，请稍后再试!");
-                                                }
-                                            });
+                                    layer.msg("确认不需要执行这些(个)用例吗?", {
+                                        btn: ["确认", "取消"],
+                                        time: 0,
+                                        yes: function () {
+                                            if (item_id.includes("project")) {
 
+                                                let s = $(tree).jstree("get_selected");
+                                                if (s.length > 1) {
+                                                    layer.msg("请只选择一个项目进行去关联!");
+                                                } else {
+                                                    let t = s[0].replace("project", "");
+                                                    let project_id = t.split("user")[0];
+                                                    let user_id = t.split("user")[1];
+                                                    let parent_total_id_string = $(tree).jstree("get_parent", s);
+                                                    let task_id = parent_total_id_string.replace("task", "");
+                                                    $.ajax({
+                                                        type: "POST",
+                                                        url: "{% url 'remove_cases_from_plan' %}",
+                                                        data: {
+                                                            "param": "project",
+                                                            "param_id": project_id,
+                                                            "user_id": user_id,
+                                                            "task_id": task_id
+                                                        },
+                                                        success: function (resultData) {
+                                                            let result_message = resultData["msg"];
+                                                            layer.msg(result_message);
+                                                            let result_status = resultData["status"];
+                                                            if (result_status === 1) {
+                                                                window.location.href = "{% url 'plan' %}";
+                                                            }
+                                                        },
+                                                        error: function () {
+                                                            layer.msg("服务器异常，请稍后再试!");
+                                                        }
+                                                    });
+
+                                                }
+                                            } else if (item_id.includes("module")) {
+                                                let s = $(tree).jstree("get_selected");
+                                                if (s.length > 1) {
+                                                    layer.msg("请只选择一个模块进行去关联!");
+                                                } else {
+                                                    let t = s[0].replace("module", "");
+                                                    let module_id = t.split("user")[0];
+                                                    let user_id = t.split("user")[1];
+                                                    let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", s));
+                                                    let task_id = parent_total_id_string.replace("task", "");
+                                                    $.ajax({
+                                                        type: "POST",
+                                                        url: "{% url 'remove_cases_from_plan' %}",
+                                                        data: {
+                                                            "param": "module",
+                                                            "param_id": module_id,
+                                                            "user_id": user_id,
+                                                            "task_id": task_id
+                                                        },
+                                                        success: function (resultData) {
+                                                            let result_message = resultData["msg"];
+                                                            layer.msg(result_message);
+                                                            let result_status = resultData["status"];
+                                                            if (result_status === 1) {
+                                                                window.location.href = "{% url 'plan' %}";
+                                                            }
+                                                        },
+                                                        error: function () {
+                                                            layer.msg("服务器异常，请稍后再试!");
+                                                        }
+                                                    });
+
+                                                }
+                                            } else if (item_id.includes("case")) {
+                                                let s = $(tree).jstree("get_selected");
+                                                let cases_ids = [];
+                                                for (var i = 0; i < s.length; i++) {
+                                                    cases_ids.push(s[i].replace("case", ""));
+                                                }
+                                                let one_of_the_module = $(tree).jstree("get_parent", $node);
+                                                let user_id = one_of_the_module.replace("module", "").split("user")[1];
+                                                let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", one_of_the_module));
+                                                let task_id = parent_total_id_string.replace("task", "");
+                                                $.ajax({
+                                                    type: "POST",
+                                                    url: "{% url 'remove_cases_from_plan' %}",
+                                                    data: {
+                                                        "param": "case",
+                                                        "param_id": JSON.stringify(cases_ids),
+                                                        "user_id": user_id,
+                                                        "task_id": task_id
+                                                    },
+                                                    success: function (resultData) {
+                                                        let result_message = resultData["msg"];
+                                                        layer.msg(result_message);
+                                                        let result_status = resultData["status"];
+                                                        if (result_status === 1) {
+                                                            window.location.href = "{% url 'plan' %}";
+                                                        }
+                                                    },
+                                                    error: function () {
+                                                        layer.msg("服务器异常，请稍后再试!");
+                                                    }
+                                                });
+                                            }
                                         }
-                                    } else if (item_id.includes("module")) {
-                                        let s = $(tree).jstree("get_selected");
-                                        if (s.length > 1) {
-                                            layer.msg("请只选择一个模块进行去关联!");
-                                        } else {
-                                            let t = s[0].replace("module", "");
-                                            let module_id = t.split("user")[0];
-                                            let user_id = t.split("user")[1];
-                                            let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", s));
-                                            let task_id = parent_total_id_string.replace("task", "");
-                                            $.ajax({
-                                                type: "POST",
-                                                url: "{% url 'remove_cases_from_plan' %}",
-                                                data: {
-                                                    "param": "module",
-                                                    "param_id": module_id,
-                                                    "user_id": user_id,
-                                                    "task_id": task_id
-                                                },
-                                                success: function (resultData) {
-                                                    let result_message = resultData["msg"];
-                                                    layer.msg(result_message);
-                                                    let result_status = resultData["status"];
-                                                    if (result_status === 1) {
-                                                        window.location.href = "{% url 'plan' %}";
-                                                    }
-                                                },
-                                                error: function () {
-                                                    layer.msg("服务器异常，请稍后再试!");
-                                                }
-                                            });
+                                    });
 
-                                        }
-                                    } else if (item_id.includes("case")) {
-                                        let s = $(tree).jstree("get_selected");
-                                        let cases_ids = [];
-                                        for(var i=0;i<s.length;i++){cases_ids.push(s[i].replace("case", ""));}
-                                        let one_of_the_module = $(tree).jstree("get_parent", $node);
-                                        let user_id = one_of_the_module.replace("module", "").split("user")[1];
-                                        let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", one_of_the_module));
-                                        let task_id = parent_total_id_string.replace("task", "");
-                                        $.ajax({
-                                                type: "POST",
-                                                url: "{% url 'remove_cases_from_plan' %}",
-                                                data: {
-                                                    "param": "case",
-                                                    "param_id": JSON.stringify(cases_ids),
-                                                    "user_id": user_id,
-                                                    "task_id": task_id
-                                                },
-                                                success: function (resultData) {
-                                                    let result_message = resultData["msg"];
-                                                    layer.msg(result_message);
-                                                    let result_status = resultData["status"];
-                                                    if (result_status === 1) {
-                                                        window.location.href = "{% url 'plan' %}";
-                                                    }
-                                                },
-                                                error: function () {
-                                                    layer.msg("服务器异常，请稍后再试!");
-                                                }
-                                            });
-
-                                    }
                                 }
                             }
                         }
