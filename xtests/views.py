@@ -407,7 +407,8 @@ def plan(request):
                                                                       is_dst=None)
                 p = TestPlan.objects.create(name=name, start_time=start_time, end_time=end_time)
                 p.save()
-                return JsonResponse({"status": STATUS_SUCCESS, "msg": "创建测试计划成功"})
+                executors = [e.username for e in p.get_executors]
+                return JsonResponse({"status": STATUS_SUCCESS, "msg": "创建测试计划成功", "data":{"plan": p.pk,"name": p.name, "start_time":p.start_time, "end_time":p.end_time, "process": p.get_progress, "executors": executors, "bugs": p.get_bugs_count, "cases": p.get_cases_count}})
     elif request.method == "DELETE":
         pk = QueryDict(request.body).get("pk")
         plans = TestPlan.objects.filter(pk=pk)
