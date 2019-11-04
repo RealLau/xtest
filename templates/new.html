@@ -37,12 +37,12 @@
                     <div class="wrap-input100 validate-input" data-validate="Please enter project name">
                         {% csrf_token %}
                         <input class="input100" type="text" name="project_name" placeholder="项目名称*">
-                        
+
                     </div>
                     <div class="wrap-input100 validate-input">
                     <textarea class="input100" name="project_desc" placeholder="描述"
                               aria-label="optional"></textarea>
-                        
+
                     </div>
                     <div class="file-upload-wrapper" data-text="project avatar">
                     </div>
@@ -73,17 +73,17 @@
                     {% csrf_token %}
                     <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} title">
                         <input class="input100" type="text" name="{{ item }}_title" placeholder="{{ item }}标题*">
-                        
+
                     </div>
                     <div class="wrap-input100 validate-input">
                     <textarea class="input100" name="{{ item }}_desc" placeholder="描述"
                               aria-label="optional"></textarea>
-                        
+
                     </div>
                     <div class="wrap-input100">
                     <textarea class="input100" name="{{ item }}_preconditions" placeholder="前提条件"
                               aria-label="preconditions"></textarea>
-                        
+
                     </div>
                     <div id="steps" data-validate="Please enter {{ item }} steps">
                     <textarea class="input100" name="{{ item }}_steps" placeholder="步骤*" aria-label="optional"
@@ -92,7 +92,7 @@
                     <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} expectation">
                     <textarea class="input100" name="{{ item }}_expectation" placeholder="期望结果*"
                               aria-label="expectation"></textarea>
-                        
+
                     </div>
                     <div class="priority_selector">
                         <div class="priority_select">
@@ -120,7 +120,7 @@
                     <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} name">
                         {% csrf_token %}
                         <input class="input100" type="text" name="{{ item }}_name" placeholder="模块名称*">
-                        
+
                     </div>
                     <div class="project_selector">
                         <div class="project_select">
@@ -144,17 +144,20 @@
                 </form>
             {% elif item == "plan" %}
                 <form class="contact100-form validate-form" enctype="multipart/form-data">
-                    <div class="wrap-input100 validate-input" data-validate="Please enter {{ item }} name">
-                        {% csrf_token %}
-                        <input class="input100" type="text" name="{{ item }}_code_name"
-                               placeholder="代号*">
-                        
-                    </div>
                     <div class="project_selector separate-line-bottom">
-                        <label for="start_time">开始时间*</label>
-                        <input id="start_time" name="start_time" class="time_input" autocomplete="off">
-                        <label for="end_time" style="margin-left: 10px">结束时间*</label>
-                        <input id="end_time" name="end_time" class="time_input" autocomplete="off">
+                        <p>
+                            {% csrf_token %}
+                            <label for="plan_code_name">计划代号*:</label>
+                            <input id="plan_code_name" type="text" name="{{ item }}_code_name" autocomplete="off" style="text-align:center">
+                        </p>
+                        <p>
+                            <label for="start_time">开始时间*:</label>
+                            <input id="start_time" name="start_time" class="time_input" autocomplete="off">
+                        </p>
+                        <p>
+                            <label for="end_time">结束时间*:</label>
+                            <input id="end_time" name="end_time" class="time_input" autocomplete="off">
+                        </p>
                     </div>
                     <div class="container-contact100-form-btn">
                         <button id="cancel-button" class="contact100-form-btn cancel-submit" style="margin-top: 200px"
@@ -219,12 +222,16 @@
             });
             $("form").submit(function (e) {
                 e.preventDefault();
+                let plan_code = $("#plan_code_name");
                 let format = "YYYY-MM-DD HH:mm:ss";
                 let plan_start_time_value = plan_start_time.getDateString(format);
                 let plan_end_time_value = plan_end_time.getDateString(format);
                 if (Date.parse(plan_start_time_value) > Date.parse(plan_end_time_value)) {
-                    layer.msg("开始时间不能大于结束时间");
-                } else {
+                    layer.msg("开始时间不能大于结束时间!");
+                }else if(!$(plan_code).val()){
+                    layer.msg("计划代号不能为空!");
+                }
+                else {
                     let formData = new FormData(this);
                     for (var key of formData.entries()) {
                         console.log(key[0] + ',' + key[1])
@@ -342,10 +349,10 @@
                 let formData = new FormData(this);
                 for (var pair of formData.entries()) {
                     if ((pair[0] !== "case_desc" && pair[0] !== "case_preconditions" && pair[0] !== "case_desc") && pair[1] === "") {
-                        if(pair[0]==="module"){
+                        if (pair[0] === "module") {
                             $(".select>span>i").attr("class", "fa fa-info-circle");
                         }
-                        if(pair[0]==="case_priority"){
+                        if (pair[0] === "case_priority") {
                             $(".priority_select>span>i").attr("class", "fa fa-info-circle");
                         }
                         layer.msg("请注意*项为必填项！");
@@ -368,9 +375,9 @@
                             layer.confirm(result_message, {
                                 btn: ['继续为该项目创建用例', '查看此用例', "关闭"] //按钮
                             }, function () {
-                                window.location.href = "/new/4/"+pro_pk;
+                                window.location.href = "/new/4/" + pro_pk;
                             }, function () {
-                                window.location.href = "{% url 'case_detail' %}?pk="+new_case_pk;
+                                window.location.href = "{% url 'case_detail' %}?pk=" + new_case_pk;
                             }, function () {
                                 layer.closeAll();
                             });

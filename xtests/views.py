@@ -1,3 +1,4 @@
+from django.db import connection
 from django.shortcuts import render
 from django.utils.datastructures import MultiValueDictKeyError
 from django.http import QueryDict
@@ -18,7 +19,7 @@ from django.utils.dateparse import parse_datetime
 import pytz
 from django.conf import settings
 import os
-from django.db.models import Q
+from django.db.models import Q, Count
 from collections import Counter
 
 
@@ -30,10 +31,19 @@ class SignUpView(CreateView):
 
 def users(request):
     if request.method == "GET":
-        us = CustomUser.objects.all()
+        not_has_task = request.GET.get("not_has_task")
         data = []
-        for u in us:
-            data.append({"name": u.username, "id": u.pk})
+        if not not_has_task:
+            us = CustomUser.objects.all()
+            for u in us:
+                data.append({"name": u.username, "id": u.pk})
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute("select distinct id from xtest.xtests_customuser where id not in (select distinct user_id from xtest.xtests_caserecord)")
+                for i in cursor.fetchall():
+                    u_id = i[0]
+                    user = CustomUser.objects.get(pk=u_id)
+                    data.append({"name": user.username, "id": u_id})
         return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": data})
     else:
         return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
@@ -372,7 +382,7 @@ def plan(request):
         pk = request.POST.get("pk")
         if pk:
             p = TestPlan.objects.get(pk=pk)
-            new_name = request.POST["plan_name"]
+            new_name = request.POST["plan_code_name"]
             start_time = pytz.timezone(settings.TIME_ZONE).localize(parse_datetime(request.POST["start_time"]), is_dst=None)
             end_time = pytz.timezone(settings.TIME_ZONE).localize(parse_datetime(request.POST["end_time"]), is_dst=None)
             if new_name and start_time and end_time:
@@ -425,16 +435,40 @@ def plan(request):
                 tasks = Task.objects.filter(plan=plan)
                 for t in tasks:
                     task_id = "task" + str(t.pk)
-                    t_data = {"id": task_id, "parent": plan_id, "text": t.executor.username,
-                              "icon": t.executor.avatar_url}
+                    t_data = {"id": task_id, "parent": plan_id, "text": t.executor.username, "icon": t.executor.avatar_url}
                     all_data.append(t_data)
-                    cases_records = CaseRecord.objects.filter(task_id=t.pk, plan_id=plan.pk)
-                    for r in cases_records:
-                        case_name = TestCase.objects.get(pk=r.case_id).title
-                        icon = "/static/images/img/case_execute_status/case_%s.png" % r.get_result_status_display()
-                        r_data = {"id": "record" + str(r.pk), "parent": task_id, "text": case_name,
-                                  "icon": icon}
-                        all_data.append(r_data)
+                    with connection.cursor() as cursor:
+                        cursor.execute("select case_id from xtest.xtests_caserecord where task_id=%d and plan_id=%d" % (t.pk, plan.pk))
+                        cases_ids = [i[0] for i in cursor.fetchall()]
+                        if cases_ids:
+                            cursor.execute("select distinct module_id from xtest.xtests_testcase where id in {cases_ids}".format(cases_ids=tuple(cases_ids)))
+                            modules_ids = [i[0] for i in cursor.fetchall()]
+                            if len(modules_ids)>1:
+                                cursor.execute("select distinct project_id from xtest.xtests_testmodule where id in {modules_ids}".format(modules_ids=tuple(modules_ids)))
+                            else:
+                                cursor.execute(
+                                    "select distinct project_id from xtest.xtests_testmodule where id ={modules_ids}".format(
+                                        modules_ids=modules_ids[0]))
+                            projects_ids = [i[0] for i in cursor.fetchall()]
+                            for p_id in projects_ids:
+                                project = Project.objects.get(pk=p_id)
+                                project_id = "project"+str(p_id)+"user"+str(t.executor.pk)
+                                pro_data = {"id": project_id, "parent": task_id, "text": project.name, "icon": project.avatar_url_for_tree}
+                                all_data.append(pro_data)
+                            for m_id in modules_ids:
+                                module = TestModule.objects.get(pk=m_id)
+                                parent_id = "project"+str(module.project.pk)+"user"+str(t.executor.pk)
+                                module_id = "module"+str(m_id)+"user"+str(t.executor.pk)
+                                module_data = {"id": module_id, "parent": parent_id, "text": module.name, "icon": "/static/images/img/tree-module.png"}
+                                all_data.append(module_data)
+                            for c_id in cases_ids:
+                                case = TestCase.objects.get(pk=c_id)
+                                case_record = CaseRecord.objects.get(task_id=t.pk, plan_id=plan.pk, case_id=c_id)
+                                parent_id = "module" + str(case.module.pk)+"user"+str(t.executor.pk)
+                                case_id = "case" + str(c_id)
+                                case_data = {"id": case_id, "parent": parent_id, "text": case.title,
+                                               "icon": "/static/images/img/case_execute_status/case_%s.png" % case_record.get_result_status_display()}
+                                all_data.append(case_data)
             return render(request, "plans.html", {"all_data": json.dumps(all_data, cls=DjangoJSONEncoder)})
         else:
             p = TestPlan.objects.get(pk=plan_id)
@@ -458,22 +492,43 @@ def task(request):
         else:
             task = Task.objects.get(pk=pk)
             return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": {"executor": task.executor.username, "process": task.get_progress, "bugs": task.get_bugs_count, "cases": task.get_cases_count}})
-
     elif request.method == "POST":
+        pk = request.POST.get("pk")
         user_pk = request.POST["user"]
-        plan_pk = request.POST["plan"]
-        user = CustomUser.objects.get(pk=user_pk)
-        plan = TestPlan.objects.get(pk=plan_pk)
-        # 若该用户在该计划下还有未完成任务，则不允许创建
-        users_ids_who_already_have_incomplete_task = CaseRecord.objects.distinct().values_list('user_id',
-                                                                                               flat=True).filter(
-            plan_id=plan.pk, execute_status='P')
-        if int(user_pk) in list(users_ids_who_already_have_incomplete_task):
-            return JsonResponse({"status": STATUS_FAILED, "msg": MSG_USER_ALREADY_HAVE_INCOMPLETE_TASK})
+        if not pk:
+            plan_pk = request.POST["plan"]
+            user = CustomUser.objects.get(pk=user_pk)
+            plan = TestPlan.objects.get(pk=plan_pk)
+            # 若该用户在该计划下已有任务，则不允许创建
+            new_user_already_has_task = Task.objects.filter(executor=user, plan=plan)
+            if new_user_already_has_task:
+                return JsonResponse({"status": STATUS_FAILED, "msg": MSG_USER_ALREADY_HAVE_INCOMPLETE_TASK})
+            else:
+                t = Task.objects.create(executor=user, plan=plan)
+                t.save()
+                return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_CREATE_SUCCESS, "data": {"task": t.pk, "user": t.executor.username, "avatar": t.executor.avatar_url_for_tree}})
         else:
-            t = Task.objects.create(executor=user, plan=plan)
-            t.save()
-            return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_CREATE_SUCCESS})
+            task = Task.objects.get(pk=pk)
+            case_records = CaseRecord.objects.filter(task_id=task.pk)
+            if not case_records:
+                return JsonResponse({"status": STATUS_FAILED, "msg": MSG_MODIFY_FAIL, "reason": "空任务不允许变更，如不再需要，请直接删除."})
+            else:
+                new_user = CustomUser.objects.get(pk=user_pk)
+                org_executor = task.executor
+                if new_user == org_executor:
+                    return JsonResponse(
+                        {"status": STATUS_FAILED, "msg": MSG_MODIFY_FAIL, "reason": "不允许：任务变更前后执行者一样"})
+                else:
+                    plan = task.plan
+                    new_user_already_has_task = Task.objects.get(executor=new_user, plan=plan)
+                    if new_user_already_has_task:
+                        # new_task_id = list(CaseRecord.objects.distinct().values_list('task_id', flat=True).filter(plan_id=plan.pk, user_id=user_pk))[0]
+                        new_task_id = new_user_already_has_task.pk
+                        case_records.update(task_id=new_task_id, user_id=user_pk)
+                    else:
+                        new_task = Task.objects.create(executor=new_user, plan=task.plan)
+                        case_records.update(task_id=new_task.pk, user_id=user_pk)
+                    return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_MODIFY_SUCCESS})
     elif request.method == "DELETE":
         task_pk = QueryDict(request.body).get("pk")
         tasks = Task.objects.filter(pk=task_pk)
@@ -597,6 +652,7 @@ def bugs_by_plan(request):
     else:
         return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
 
+
 def bugs_by_level(request):
     if request.method == "POST":
         plan = request.POST.get("plan")
@@ -675,5 +731,42 @@ def plan_execute_info(request):
             processes.append(t.get_progress)
         res["processes"] = processes
         return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": res})
+    else:
+        return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
+
+
+def remove_cases_from_plan(request):
+    if request.method == "POST":
+        param = request.POST.get("param")
+        param_id = request.POST.get("param_id")
+        user_id = request.POST.get("user_id")
+        task_id = request.POST.get("task_id")
+        print(param, param_id, type(param_id), task_id, type(task_id), user_id, type(user_id))
+        if param == "project":
+            sql = "select r.case_id from xtest.xtests_caserecord r inner join xtest.xtests_testcase c on r.case_id=c.id inner join xtest.xtests_testmodule m on c.module_id=m.id inner join xtest.xtests_project p on m.project_id=p.id where p.id='%s' and r.user_id='%s'" % (param_id, user_id)
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                cases_ids = [i[0] for i in cursor.fetchall()]
+                if not cases_ids:
+                    return JsonResponse({"status": STATUS_FAILED, "msg": "该执行者在该项目下无关联用例，无需删除"})
+                else:
+                    CaseRecord.objects.filter(user_id=user_id, task_id=task_id, case_id__in=cases_ids).delete()
+                    return JsonResponse({"status": STATUS_SUCCESS, "msg": "删除成功"})
+        elif param == "module":
+            sql = "select r.case_id from xtest.xtests_caserecord r inner join xtest.xtests_testcase c on r.case_id=c.id inner join xtest.xtests_testmodule m on c.module_id=m.id where m.id='%s' and r.user_id='%s'" % (
+            param_id, user_id)
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                cases_ids = [i[0] for i in cursor.fetchall()]
+                if not cases_ids:
+                    return JsonResponse({"status": STATUS_FAILED, "msg": "该执行者在该模块下无关联用例，无需删除"})
+                else:
+                    CaseRecord.objects.filter(user_id=user_id, task_id=task_id, case_id__in=cases_ids).delete()
+                    return JsonResponse({"status": STATUS_SUCCESS, "msg": "删除成功"})
+        elif param == "case":
+            CaseRecord.objects.filter(user_id=user_id, task_id=task_id, case_id__in=json.loads(param_id)).delete()
+            return JsonResponse({"status": STATUS_SUCCESS, "msg": "删除成功"})
+        else:
+            return JsonResponse({"status": STATUS_FAILED, "msg": "参数错误"})
     else:
         return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})

@@ -52,4 +52,6 @@ urlpatterns = [
                   url(r'bugs_by_module', views.bugs_by_module, name='bugs_by_module'),
                   url(r'plan_execute_info', views.plan_execute_info, name='plan_execute_info'),
                   url(r'users', views.users, name="users"),
+                  url(r'remove_cases_from_plan', views.remove_cases_from_plan, name='remove_cases_from_plan'),
+
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
