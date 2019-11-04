@@ -34,6 +34,19 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav mx-auto h-100">
+                <li class="nav-item">
+                        {% if '/home' in request.path %}
+
+                            <a class="nav-link active" href="{% url 'home' %}">
+                        {% else %}
+                            <a class="nav-link" href="{% url 'home' %}">
+                        {% endif %}
+                        <i class="fa fa-home"></i>
+                        <span>
+                                    首页 <i class="fas"></i>
+                                </span>
+                        </a>
+                    </li>
 
                     <li class="nav-item">
                         {% if '/plan' in request.path %}
@@ -42,9 +55,9 @@
                         {% else %}
                             <a class="nav-link" href="{% url 'plan' %}">
                         {% endif %}
-                        <i class="fa fa-home"></i>
+                        <i class="fa fa-plane"></i>
                         <span>
-                                    首页 <i class="fas"></i>
+                                    计划总览 <i class="fas"></i>
                                 </span>
                         </a>
                     </li>
@@ -57,7 +70,7 @@
                         {% endif %}
                         <i class="fa fa-file-text"></i>
                         <span>
-                                    测试用例 <i class="fas"></i>
+                                    用例总览 <i class="fas"></i>
                                 </span>
                         </a>
                     </li>

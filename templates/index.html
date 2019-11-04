@@ -1,10 +1,8 @@
 {% extends 'Base/base.html' %}
-
 {% block shotcut_operation %}
-    <span class="item_create_info">以下是最近一次测试计划的统计，你也可以<a href="{% url 'new' item=3 %}"><i
-            class="fa fa-pencil operation_link"></i></a>创建新的测试计划</span>
+    <span class="item_create_info">点击<a href=""><i
+            class="fa fa-pencil-square-o operation_link"></i></a>生成测试报告</span>
 {% endblock %}
-
 {% block main_content %}
     <div class="row tm-content-row">
         <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 tm-block-col">
@@ -141,7 +139,7 @@
                             Chart.defaults.global.defaultFontColor = 'white';
                             // DOM is ready
                             $(function () {
-                                drawLineChart(data.projects, data.highest, data.medium, data.low, data.lowest); // Line Chart
+                                drawLineChart(data.projects, data.highest, data.high, data.medium, data.low, data.lowest); // Line Chart
                                 $(window).resize(function () {
                                     updateLineChart();
                                 });

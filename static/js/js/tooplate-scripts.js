@@ -1,6 +1,6 @@
 const width_threshold = 480;
 
-function drawLineChart(data_projects, data_highest, data_medium, data_low, data_lowest) {
+function drawLineChart(data_projects, data_highest, data_high, data_medium, data_low, data_lowest) {
     let lc = $("#lineChart");
     let lc_parent = $(lc).parent();
     if ($(lc).length) {
@@ -44,6 +44,14 @@ function drawLineChart(data_projects, data_highest, data_medium, data_low, data_
                         data: data_highest,
                         fill: false,
                         borderColor: "rgba(255,99,132,1)",
+                        cubicInterpolationMode: "monotone",
+                        pointRadius: 0
+                    },
+                    {
+                        label: "High",
+                        data: data_high,
+                        fill: false,
+                        borderColor: "rgba(255,222,132,1)",
                         cubicInterpolationMode: "monotone",
                         pointRadius: 0
                     },
@@ -245,12 +253,13 @@ function drawPieChart(data_level) {
                 datasets: [
                     {
                         data: data_level,
-                        backgroundColor: ["#F7604D", "#4ED6B8", "#A8D582", "#00FF00"],
+                        backgroundColor: ["#F7604D", "#F1A041", "#4ED6B8", "#A8D582", "#00FF00"],
                         label: "Level"
                     }
                 ],
                 labels: [
                     "Highest",
+                    "High",
                     "Medium",
                     "Low",
                     "Lowest"

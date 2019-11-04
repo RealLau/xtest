@@ -6,6 +6,7 @@
     <link href="/static/js/dist/rome.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/costom.css">
 {% endblock %}
+
 {% block main_content %}
     <div class="center-div">
         <label>
@@ -78,8 +79,120 @@
             "contextmenu": {
                 "items": function ($node) {
                     let item_id = $node.id;
-                    console.log(item_id);
-                    if ((item_id.includes("plan"))) {
+                    if (item_id === "Root") {
+                        return {
+                            "New": {
+                                "separator_before": false,
+                                "separator_after": false,
+                                "label": "计划",
+                                "icon": "/static/images/img/add.png",
+                                "action": function (obj) {
+                                    let plan_detail_form = $(".case_detail_ol, .module_detail_ol, .project_detail_ol, form");
+                                    if ($(plan_detail_form).length !== 0) {
+                                        $(plan_detail_form).remove();
+                                    }
+
+                                    let data = '<form class="contact100-form validate-form" enctype="multipart/form-data">' +
+                                        '<div class="project_selector separate-line-bottom">\n' +
+                                        '                        <p>\n' +
+                                        '                            {% csrf_token %}\n' +
+                                        '                            <label for="plan_code_name">计划代号*:</label>\n' +
+                                        '                            <input id="plan_code_name" type="text" name="plan_code_name" autocomplete="off" style="text-align:center">\n' +
+                                        '                        </p>\n' +
+                                        '                        <p>\n' +
+                                        '                            <label for="start_time">开始时间*:</label>\n' +
+                                        '                            <input id="start_time" name="start_time" class="time_input" autocomplete="off">\n' +
+                                        '                        </p>\n' +
+                                        '                        <p>\n' +
+                                        '                            <label for="end_time">结束时间*:</label>\n' +
+                                        '                            <input id="end_time" name="end_time" class="time_input" autocomplete="off">\n' +
+                                        '                        </p>\n' +
+                                        '                    </div>' +
+                                        '                    <div class="center-div">' +
+                                        '                        <button style="margin-top: 200px;background-color: #f5a623;padding: 0 20px;color: white;font-family: Ubuntu-Bold;">保存' +
+                                        '                        </button>' +
+                                        '                    </div>' +
+                                        '                </form>';
+                                    $("#plan-task-case-form").append(data);
+                                    let plan_start_time = rome(start_time, options = {
+                                        "required": true
+                                    });
+                                    let plan_end_time = rome(end_time, options = {
+                                        "required": true
+                                    });
+                                    $("form").submit(function (e) {
+                                        e.preventDefault();
+                                        let formData = new FormData(this);
+                                        $.ajax({
+                                            type: "POST",
+                                            url: "{% url 'plan' %}",
+                                            data: formData,
+                                            contentType: false,
+                                            processData: false,
+                                            dataType: 'json',
+                                            success: function (resultData) {
+                                                layer.closeAll();
+                                                let result_message = resultData["msg"];
+                                                let result_status = resultData["status"];
+                                                let result_data = resultData["data"];
+                                                if (result_status === 1) {
+                                                    let case_detail_or_edit_form = $(".case_detail_ol,form, .select");
+                                                    if ($(case_detail_or_edit_form).length !== 0) {
+                                                        $(case_detail_or_edit_form).remove();
+                                                    }
+
+                                                    let steps_detail = $("#case_detail_steps");
+                                                    if ($(steps_detail).length !== 0) {
+                                                        $(steps_detail).remove();
+                                                    }
+                                                    let html_source = '<ol class="case_detail_ol">\n' +
+                                                        '                                <li class="case_detail_li">\n' +
+                                                        '                                    <p class="case_detail_h4">代号</p>\n' +
+                                                        '                                    <p class="case_detail_title"></p>\n' +
+                                                        '                                </li>\n' +
+                                                        '                                <li class="case_detail_li">\n' +
+                                                        '                                    <p class="case_detail_h4">用例总计</p>\n' +
+                                                        '                                    <p class="case_detail_desc"></p>\n' +
+                                                        '                                </li>\n' +
+                                                        '                                <li class="case_detail_li">\n' +
+                                                        '                                    <p class="case_detail_h4">进度</p>\n' +
+                                                        '                                    <p class="case_detail_preconditions">' +
+                                                        '</p>' +
+                                                        '                                </li>\n' +
+                                                        '                                <li class="case_detail_li">\n' +
+                                                        '                                    <p class="case_detail_h4">BUG总计</p>\n' +
+                                                        '                                    <p class="case_detail_expectation"></p>\n' +
+                                                        '                                </li>\n' +
+                                                        '                                <li class="case_detail_li">\n' +
+                                                        '                                    <p class="case_detail_h4">参与者</p>\n' +
+                                                        '                                    <p class="case_detail_priority"></p>\n' +
+                                                        '                                </li>\n' +
+                                                        '                            </ol>';
+                                                    $("#plan-task-case-form").append(html_source);
+                                                    $(".case_detail_title").text(result_data.name);
+                                                    $(".case_detail_desc").text(result_data.cases);
+                                                    $(".case_detail_preconditions").text(result_data.process);
+                                                    $(".case_detail_expectation").text(result_data.bugs);
+                                                    $(".case_detail_priority").text(result_data.executors.join(", "));
+                                                    $(tree).jstree('create_node', $node, {
+                                                        "id": "plan" + result_data.plan,
+                                                        "text": result_data.name,
+                                                        "icon": "/static/images/img/tree-plan.png",
+                                                    }, "last", false, false);
+                                                    layer.msg("创建测试计划成功");
+                                                } else {
+                                                    layer.msg(result_message);
+                                                }
+                                            },
+                                            error: function () {
+                                                layer.msg("服务器异常，请稍后再试!");
+                                            }
+                                        })
+                                    });
+                                }
+                            },
+                        }
+                    } else if ((item_id.includes("plan"))) {
                         let plan_id = item_id.replace("plan", "");
                         return {
                             "New": {
@@ -636,103 +749,112 @@
                                 "label": "删除",
                                 "icon": "/static/images/img/delete.png",
                                 "action": function (obj) {
-                                    if (item_id.includes("project")) {
-                                        let s = $(tree).jstree("get_selected");
-                                        if (s.length > 1) {
-                                            layer.msg("请只选择一个项目进行去关联!");
-                                        } else {
-                                            let t = s[0].replace("project", "");
-                                            let project_id = t.split("user")[0];
-                                            let user_id = t.split("user")[1];
-                                            let parent_total_id_string = $(tree).jstree("get_parent", s);
-                                            let task_id = parent_total_id_string.replace("task", "");
-                                            $.ajax({
-                                                type: "POST",
-                                                url: "{% url 'remove_cases_from_plan' %}",
-                                                data: {
-                                                    "param": "project",
-                                                    "param_id": project_id,
-                                                    "user_id": user_id,
-                                                    "task_id": task_id
-                                                },
-                                                success: function (resultData) {
-                                                    let result_message = resultData["msg"];
-                                                    layer.msg(result_message);
-                                                    let result_status = resultData["status"];
-                                                    if (result_status === 1) {
-                                                        window.location.href = "{% url 'plan' %}";
-                                                    }
-                                                },
-                                                error: function () {
-                                                    layer.msg("服务器异常，请稍后再试!");
-                                                }
-                                            });
+                                    layer.msg("确认不需要执行这些(个)用例吗?", {
+                                        btn: ["确认", "取消"],
+                                        time: 0,
+                                        yes: function () {
+                                            if (item_id.includes("project")) {
 
+                                                let s = $(tree).jstree("get_selected");
+                                                if (s.length > 1) {
+                                                    layer.msg("请只选择一个项目进行去关联!");
+                                                } else {
+                                                    let t = s[0].replace("project", "");
+                                                    let project_id = t.split("user")[0];
+                                                    let user_id = t.split("user")[1];
+                                                    let parent_total_id_string = $(tree).jstree("get_parent", s);
+                                                    let task_id = parent_total_id_string.replace("task", "");
+                                                    $.ajax({
+                                                        type: "POST",
+                                                        url: "{% url 'remove_cases_from_plan' %}",
+                                                        data: {
+                                                            "param": "project",
+                                                            "param_id": project_id,
+                                                            "user_id": user_id,
+                                                            "task_id": task_id
+                                                        },
+                                                        success: function (resultData) {
+                                                            let result_message = resultData["msg"];
+                                                            layer.msg(result_message);
+                                                            let result_status = resultData["status"];
+                                                            if (result_status === 1) {
+                                                                window.location.href = "{% url 'plan' %}";
+                                                            }
+                                                        },
+                                                        error: function () {
+                                                            layer.msg("服务器异常，请稍后再试!");
+                                                        }
+                                                    });
+
+                                                }
+                                            } else if (item_id.includes("module")) {
+                                                let s = $(tree).jstree("get_selected");
+                                                if (s.length > 1) {
+                                                    layer.msg("请只选择一个模块进行去关联!");
+                                                } else {
+                                                    let t = s[0].replace("module", "");
+                                                    let module_id = t.split("user")[0];
+                                                    let user_id = t.split("user")[1];
+                                                    let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", s));
+                                                    let task_id = parent_total_id_string.replace("task", "");
+                                                    $.ajax({
+                                                        type: "POST",
+                                                        url: "{% url 'remove_cases_from_plan' %}",
+                                                        data: {
+                                                            "param": "module",
+                                                            "param_id": module_id,
+                                                            "user_id": user_id,
+                                                            "task_id": task_id
+                                                        },
+                                                        success: function (resultData) {
+                                                            let result_message = resultData["msg"];
+                                                            layer.msg(result_message);
+                                                            let result_status = resultData["status"];
+                                                            if (result_status === 1) {
+                                                                window.location.href = "{% url 'plan' %}";
+                                                            }
+                                                        },
+                                                        error: function () {
+                                                            layer.msg("服务器异常，请稍后再试!");
+                                                        }
+                                                    });
+
+                                                }
+                                            } else if (item_id.includes("case")) {
+                                                let s = $(tree).jstree("get_selected");
+                                                let cases_ids = [];
+                                                for (var i = 0; i < s.length; i++) {
+                                                    cases_ids.push(s[i].replace("case", ""));
+                                                }
+                                                let one_of_the_module = $(tree).jstree("get_parent", $node);
+                                                let user_id = one_of_the_module.replace("module", "").split("user")[1];
+                                                let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", one_of_the_module));
+                                                let task_id = parent_total_id_string.replace("task", "");
+                                                $.ajax({
+                                                    type: "POST",
+                                                    url: "{% url 'remove_cases_from_plan' %}",
+                                                    data: {
+                                                        "param": "case",
+                                                        "param_id": JSON.stringify(cases_ids),
+                                                        "user_id": user_id,
+                                                        "task_id": task_id
+                                                    },
+                                                    success: function (resultData) {
+                                                        let result_message = resultData["msg"];
+                                                        layer.msg(result_message);
+                                                        let result_status = resultData["status"];
+                                                        if (result_status === 1) {
+                                                            window.location.href = "{% url 'plan' %}";
+                                                        }
+                                                    },
+                                                    error: function () {
+                                                        layer.msg("服务器异常，请稍后再试!");
+                                                    }
+                                                });
+                                            }
                                         }
-                                    } else if (item_id.includes("module")) {
-                                        let s = $(tree).jstree("get_selected");
-                                        if (s.length > 1) {
-                                            layer.msg("请只选择一个模块进行去关联!");
-                                        } else {
-                                            let t = s[0].replace("module", "");
-                                            let module_id = t.split("user")[0];
-                                            let user_id = t.split("user")[1];
-                                            let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", s));
-                                            let task_id = parent_total_id_string.replace("task", "");
-                                            $.ajax({
-                                                type: "POST",
-                                                url: "{% url 'remove_cases_from_plan' %}",
-                                                data: {
-                                                    "param": "module",
-                                                    "param_id": module_id,
-                                                    "user_id": user_id,
-                                                    "task_id": task_id
-                                                },
-                                                success: function (resultData) {
-                                                    let result_message = resultData["msg"];
-                                                    layer.msg(result_message);
-                                                    let result_status = resultData["status"];
-                                                    if (result_status === 1) {
-                                                        window.location.href = "{% url 'plan' %}";
-                                                    }
-                                                },
-                                                error: function () {
-                                                    layer.msg("服务器异常，请稍后再试!");
-                                                }
-                                            });
+                                    });
 
-                                        }
-                                    } else if (item_id.includes("case")) {
-                                        let s = $(tree).jstree("get_selected");
-                                        let cases_ids = [];
-                                        for(var i=0;i<s.length;i++){cases_ids.push(s[i].replace("case", ""));}
-                                        let one_of_the_module = $(tree).jstree("get_parent", $node);
-                                        let user_id = one_of_the_module.replace("module", "").split("user")[1];
-                                        let parent_total_id_string = $(tree).jstree("get_parent", $(tree).jstree("get_parent", one_of_the_module));
-                                        let task_id = parent_total_id_string.replace("task", "");
-                                        $.ajax({
-                                                type: "POST",
-                                                url: "{% url 'remove_cases_from_plan' %}",
-                                                data: {
-                                                    "param": "case",
-                                                    "param_id": JSON.stringify(cases_ids),
-                                                    "user_id": user_id,
-                                                    "task_id": task_id
-                                                },
-                                                success: function (resultData) {
-                                                    let result_message = resultData["msg"];
-                                                    layer.msg(result_message);
-                                                    let result_status = resultData["status"];
-                                                    if (result_status === 1) {
-                                                        window.location.href = "{% url 'plan' %}";
-                                                    }
-                                                },
-                                                error: function () {
-                                                    layer.msg("服务器异常，请稍后再试!");
-                                                }
-                                            });
-
-                                    }
                                 }
                             }
                         }
