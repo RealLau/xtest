@@ -1,9 +1,15 @@
 # xtest
-  A testing plaform for manage case, case execution, execution analyze and Http service online debugging...
+  A testing platform for test plan/task/user/case management, case execution, plan execution analysis, report generation and Http(s) based automation online management...
 # How to install
-- Python interpreter
+- Required
 
-  This plaform is under python 3.7, so you have to install it first.
+  - Python
+  
+    This platform is under python 3.7(64-Bit), so you have to install it first.
+  - Jira
+    
+    This platform enables association with Atlassian Product Jira, you can choose to install it or not, this is optional.
+  
 - Other python packages
 
   Just install packages listed in requirements.txt
