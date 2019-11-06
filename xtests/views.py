@@ -95,13 +95,9 @@ def list_case(request):
 
 
 def case_detail(request):
-    json_type = request.GET.get("json_type")
     ca_pk = request.GET.get("pk")
     ca = TestCase.objects.get(pk=ca_pk)
-    if not json_type:
-        return render(request, "case_detail.html", {"ca": ca})
-    else:
-        return JsonResponse(
+    return JsonResponse(
             {"status": STATUS_SUCCESS, "msg": {"module": ca.module.name, "title": ca.title, "desc": ca.desc,
                                                "preconditions": ca.preconditions, "steps": ca.steps,
                                                "expectation": ca.expectation, "priority": ca.priority,
@@ -193,42 +189,6 @@ def account(request):
     return render(request, "accounts.html")
 
 
-def edit(request, item, pk):
-    if item == "1":
-        edit_object = Project.objects.get(pk=pk)
-    elif item == "2":
-        projects = Project.objects.all()
-        edit_object = TestModule.objects.get(pk=pk)
-        return render(request, "edit.html", {"item": item, "edit_object": edit_object, "projects": projects})
-    elif item == "4":
-        modules = TestModule.objects.all()
-        edit_object = TestCase.objects.get(pk=pk)
-        return render(request, "edit.html", {"item": item, "edit_object": edit_object, "modules": modules})
-    else:
-        edit_object = TestPlan.objects.get(pk=pk)
-    return render(request, "edit.html", {"item": item, "edit_object": edit_object})
-
-
-def new(request, item, project_pk=None):
-    if item == "2":
-        projects = Project.objects.all()
-        return render(request, "new.html", {"item": NUMBER_TYPE[item], "projects": projects})
-    elif item == "4":
-        if project_pk:
-            p = Project.objects.get(pk=project_pk)
-            modules = TestModule.objects.filter(project=p)
-            return render(request, "new.html", {"item": NUMBER_TYPE[item], "modules": modules, "pro": p})
-        else:
-            modules = TestModule.objects.all()
-            return render(request, "new.html", {"item": NUMBER_TYPE[item], "modules": modules})
-
-    elif item == "3":
-        users = CustomUser.objects.all()
-        cases = TestCase.objects.all()
-        return render(request, "new.html", {"item": NUMBER_TYPE[item], "users": users, "cases": cases})
-    return render(request, "new.html", {"item": NUMBER_TYPE[item]})
-
-
 def remove_case(request):
     if request.method == "DELETE":
         pk = QueryDict(request.body).get("pk")
@@ -298,7 +258,6 @@ def project(request):
     elif request.method == "POST":
         # 如果存在pk，则判断为修改
         pk = request.POST.get("pk")
-        json_type = request.POST.get("json_type")
         if pk:
             name = request.POST["project_name"]
             desc = request.POST["project_desc"]
@@ -314,29 +273,28 @@ def project(request):
             avatar_path = settings.BASE_DIR + p.avatar_url
             resize_upload_file(file_path=avatar_path)
             resize_upload_file_for_tree(org_file_path=avatar_path, des_file_path=settings.BASE_DIR+p.avatar_url.split(".")[0]+"_for_tree"+"."+p.avatar_url.split(".")[1])
-            if not json_type:
-                return HttpResponseRedirect("/xtest/project")
-            else:
-                return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_MODIFY_SUCCESS, "data": {"name": p.name, "case_count": p.get_cases_count, "avatar": p.avatar_url, "desc": p.desc}})
+            return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_MODIFY_SUCCESS, "data": {"name": p.name, "case_count": p.get_cases_count, "avatar": p.avatar_url, "desc": p.desc}})
         # 否则为新建
         else:
             name = request.POST["project_name"]
-            already_exist_same_name_project = Project.objects.filter(name=name)
-            if already_exist_same_name_project:
-                return render(request, "new.html", {"status": STATUS_FAILED, "msg": "已经存在同名的项目", "item": "project"})
+            if name:
+                already_exist_same_name_project = Project.objects.filter(name=name)
+                if already_exist_same_name_project:
+                    return JsonResponse({"status": STATUS_FAILED, "msg": "已经存在同名的项目"})
+                else:
+                    desc = request.POST["project_desc"]
+                    try:
+                        avatar = request.FILES["avatar"]
+                    except MultiValueDictKeyError:
+                        avatar = "project/default.png"
+                    p = Project.objects.create(name=name, desc=desc, avatar=avatar)
+                    p.save()
+                    avatar_path = settings.BASE_DIR + p.avatar_url
+                    resize_upload_file(file_path=avatar_path)
+                    resize_upload_file_for_tree(org_file_path=avatar_path, des_file_path=settings.BASE_DIR + p.avatar_url.split(".")[0] + "_for_tree"+ "."  + p.avatar_url.split(".")[1])
+                    return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_CREATE_SUCCESS})
             else:
-                desc = request.POST["project_desc"]
-                try:
-                    avatar = request.FILES["avatar"]
-                except MultiValueDictKeyError:
-                    avatar = "project/default.png"
-                p = Project.objects.create(name=name, desc=desc, avatar=avatar)
-                p.save()
-                avatar_path = settings.BASE_DIR + p.avatar_url
-                resize_upload_file(file_path=avatar_path)
-                resize_upload_file_for_tree(org_file_path=avatar_path, des_file_path=settings.BASE_DIR + p.avatar_url.split(".")[0] + "_for_tree"+ "."  + p.avatar_url.split(".")[1])
-                projects = Project.objects.all()
-                return render(request, "projects.html", {"projects": projects})
+                return JsonResponse({"status": STATUS_FAILED, "msg": "项目名称不能为空"})
     elif request.method == "DELETE":
         pk = QueryDict(request.body).get("pk")
         projects = Project.objects.filter(pk=pk)
@@ -477,11 +435,6 @@ def plan(request):
             start_time = p.start_time
             end_time = p.end_time
             return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data":{"name": p.name, "start_time":start_time, "end_time":end_time, "process": p.get_progress, "executors": executors, "bugs": p.get_bugs_count, "cases": p.get_cases_count}})
-
-
-def plan_detail(request, pk):
-    p = TestPlan.objects.get(pk=pk)
-    return render(request, "plan_detail.html", {"plan": p})
 
 
 def task(request):

@@ -1,7 +1,26 @@
 {% extends "Base/base.html" %}
+
+{% block added_header %}
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/animate.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/hamburgers.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/animsition.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/select2.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/daterangepicker.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/util.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/file_upload.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/editor.md-master/css/editormd.min.css">
+{% endblock %}
+
 {% block shotcut_operation %}
     {% if projects %}
-        <span class="item_create_info">点我<a href="{% url 'new' item='1' %}"><i
+        <span class="item_create_info">点我<a href="javascript:void(0)"><i
                 class="fa fa-pencil operation_link"></i></a>创建新项目
     </span>
     {% endif %}
@@ -17,6 +36,7 @@
                         <tr>
                             <th scope="col">项目</th>
                             <th scope="col">名称</th>
+                            <th scope="col">描述</th>
                             <th scope="col">创建时间</th>
                             <th scope="col" colspan="2">操作</th>
                         </tr>
@@ -30,9 +50,10 @@
                                          class="rounded-circle standard-image">
                                 </td>
                                 <td><b>{{ p.name }}</b></td>
-                                <td><b>{{ p.created_time | date}}</b></td>
-                                <td><a href="{% url 'edit' item='1' pk=p.pk %}"><i
-                                        class="fa fa-edit operation_link"></i></a></td>
+                                <td><b>{{ p.desc }}</b></td>
+                                <td><b>{{ p.created_time | date }}</b></td>
+                                <td><a href="javascript: void(0)"><i
+                                        class="fa fa-edit operation_link edit-project" id="{{ p.pk }}"></i></a></td>
                                 <td><a href="javascript:void(0)" class="remove_project" id="{{ p.pk }}"><i
                                         class="fa fa-remove operation_link"></i></a></td>
                             </tr>
@@ -45,16 +66,165 @@
         {% else %}
             <div>
                 <p><img src="/static/images/img/nothing.png" alt="nothing-img"></p>
-                <span>还没有任何项目呢，请先创建<a href="{% url 'new' item='1' %}"><i
+                <span class="item_create_info">还没有任何项目呢，请先创建<a href="javascript:void(0)"><i
                         class="fa fa-pencil fa-3x operation_link"></i></a>一个吧!</span>
             </div>
         {% endif %}
-    </div>
     </div>
 {% endblock %}
 
 {% block added_script %}
     <script type="application/javascript">
+        let main = $(".custom-main");
+        $(".item_create_info").on("click", function () {
+            $(main).children().remove();
+            let html_source_new_project = '<div class="wrap-contact100">' +
+                '<form class="contact100-form validate-form" method="post" action=""\n' +
+                '                      enctype="multipart/form-data">\n' +
+                '                    <div class="wrap-input100 validate-input" data-validate="Please enter project name">\n' +
+                '                        {% csrf_token %}\n' +
+                '                        <input class="input100" type="text" name="project_name" placeholder="项目名称*">\n' +
+                '\n' +
+                '                    </div>\n' +
+                '                    <div class="wrap-input100 validate-input">\n' +
+                '                    <textarea class="input100" name="project_desc" placeholder="描述"\n' +
+                '                              aria-label="optional"></textarea>\n' +
+                '\n' +
+                '                    </div>\n' +
+                '                    <div class="file-upload-wrapper" data-text="project avatar">\n' +
+                '                    </div>\n' +
+                '                    <input name="avatar" type="file" class="file-upload-field" value="">\n' +
+                '                    <div class="container-contact100-form-btn">\n' +
+                '<button class="operations confirm-create-project"><span><i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>保存</span></button>' +
+                '<button class="operations cancel-create-project" style="margin-left: 20px;background:black"><span><i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>取消</span></button>' +
+                '</div></form></div>';
+            $(main).append(html_source_new_project);
+            $(".file-upload-wrapper").on("click", function () {
+                $("input[name='avatar']").click();
+            });
+            $("form").on("change", ".file-upload-field", function () {
+                if ($(this).val() !== "") {
+                    $(this).prevUntil(".file-upload-wrapper");
+                    $(".file-upload-wrapper").attr("data-text", $(this).val().replace(/.*([\/\\])/, ''));
+                }
+            });
+            $("form").submit(function (e) {
+                e.preventDefault();
+                let formData = new FormData(this);
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'project' %}",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    dataType: 'json',
+                    success: function (resultData) {
+                        let result_message = resultData["msg"];
+                        let result_status = resultData["status"];
+                        layer.msg(result_message);
+                        if (result_status === 1) {
+                            window.location.href = "{% url 'project' %}";
+                        }
+
+                    },
+                    error: function () {
+                        layer.msg("服务器异常，请稍后再试!");
+                    }
+                })
+
+            });
+            $(".cancel-create-project").on("click", function (e) {
+                e.preventDefault();
+                window.location.href = "{% url 'project' %}";
+            })
+
+        });
+
+        $(".edit-project").on("click", function () {
+            $(main).children().remove();
+            let p = $(this).attr("id");
+            let html_source_edit = '<div class="wrap-contact100"><form class="contact100-form validate-form" id="submit_form" enctype="multipart/form-data" method="post"\n' +
+                '                      action="">' +
+                '                    {% csrf_token %}\n' +
+                '                    <div class="wrap-input100 validate-input" data-validate="Please enter project name">\n' +
+                '                        <input class="input100" type="text" name="project_name" placeholder="project name *"\n' +
+                '                               value="">\n' +
+                '                        <input type="text" name="pk" style="display: none" value=""/>\n' +
+                '                        \n' +
+                '                    </div>\n' +
+                '                    <div class="wrap-input100 validate-input">\n' +
+                '                    <textarea class="input100" name="project_desc" placeholder="description"\n' +
+                '                              aria-label="optional"></textarea>\n' +
+                '                        \n' +
+                '                    </div>\n' +
+                '                    <div id="file_upload_div" class="file-upload-wrapper" data-text="Change avatar">\n' +
+                '                        <img src="" class="rounded-circle standard-image">\n' +
+                '                    </div>\n' +
+                '                    <input id="avatar" name="avatar" type="file" class="file-upload-field" value="">\n' +
+                '                    <div class="container-contact100-form-btn">\n' +
+                '                    <div class="container-contact100-form-btn">\n' +
+                '<button class="operations confirm-update-project"><span><i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>保存</span></button>' +
+                '<button class="operations cancel-update-project" style="margin-left: 20px;background:black"><span><i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>取消</span></button>' +
+                '</div></form></div>';
+            $(main).append(html_source_edit);
+            $("input[name='pk']").val(p);
+            $(".file-upload-wrapper").on("click", function () {
+                $("input[name='avatar']").click();
+            });
+            $("form").on("change", ".file-upload-field", function () {
+                if ($(this).val() !== "") {
+                    $("#file_upload_div>img").remove();
+                    $(this).prevUntil(".file-upload-wrapper");
+                    $(".file-upload-wrapper").attr("data-text", $(this).val().replace(/.*([\/\\])/, ''));
+                }
+            });
+            $.ajax({
+                type: "GET",
+                url: "{% url 'project' %}?pk=" + p,
+                success: function (resultData) {
+                    let result_data = resultData["data"];
+                    let result_status = resultData["status"];
+                    if (result_status === 1) {
+                        $("input[name='project_name']").val(result_data.name);
+                        $("textarea").text(result_data.desc);
+                        $("#file_upload_div>img").attr("src", result_data.avatar);
+                    }
+                },
+                error: function () {
+                    layer.msg("服务器异常，请稍后再试!");
+                }
+            });
+            $("form").submit(function (e) {
+                e.preventDefault();
+                let formData = new FormData(this);
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'project' %}",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    dataType: 'json',
+                    success: function (resultData) {
+                        let result_message = resultData["msg"];
+                        let result_status = resultData["status"];
+                        layer.msg(result_message);
+                        if (result_status === 1) {
+                            window.location.href = "{% url 'project' %}";
+                        }
+
+                    },
+                    error: function () {
+                        layer.msg("服务器异常，请稍后再试!");
+                    }
+                })
+
+            });
+            $(".cancel-update-project").on("click", function (e) {
+                e.preventDefault();
+                window.location.href = "{% url 'project' %}";
+            })
+        });
+
         $(".remove_project").on("click", function () {
             let p = $(this).attr("id");
             layer.msg("该项目下所有用例将会被删除<br>确认删除吗?", {
