@@ -1,0 +1,67 @@
+{% extends "Base/base.html" %}
+
+{% block added_header %}
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/animate.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/hamburgers.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/animsition.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/select2.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/daterangepicker.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="/static/css/util.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/file_upload.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/editor.md-master/css/editormd.min.css">
+{% endblock %}
+
+{% block shotcut_operation %}
+    {% if rps %}
+        <span class="item_create_info">点我<a href="javascript:void(0)"><i
+                class="fa fa-pencil operation_link"></i></a>创建新模板
+    </span>
+    {% endif %}
+{% endblock %}
+{% block main_content %}
+    <div class="custom-main">
+        {% if rps %}
+            <div class="col-12 tm-block-col">
+                <div class="tm-bg-primary-dark tm-block tm-block-taller tm-block-scroll">
+                    <h2 class="tm-block-title">模板列表</h2>
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col">名称</th>
+                            <th scope="col" colspan="3">操作</th>
+                        </tr>
+                        </thead>
+                        {% csrf_token %}
+                        <tbody>
+                        {% for t in rps %}
+                            <tr class="row-detail">
+                                <td><b>{{ t.name }}</b></td>
+                                <td><a href="javascript: void(0)"><i
+                                        class="fa fa-info operation_link preview-template" id="{{ t.pk }}"></i></a></td>
+                                <td><a href="javascript: void(0)"><i
+                                        class="fa fa-edit operation_link edit-template" id="{{ t.pk }}"></i></a></td>
+                                <td><a href="javascript:void(0)" class="remove_template" id="{{ t.pk }}"><i
+                                        class="fa fa-remove operation_link"></i></a></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        {% else %}
+            <div class="center-div">
+                <p><img src="/static/images/img/nothing.png" alt="nothing-img"></p>
+                <span>还没有任何模板呢，请先创建<a href="javascript:void(0)"><i
+                        class="fa fa-pencil fa-3x operation_link"></i></a>一个吧!</span>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

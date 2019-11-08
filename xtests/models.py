@@ -22,6 +22,7 @@ class CustomUser(AbstractUser):
     def avatar_url_for_tree(self):
         return self.avatar_url.split(".")[0]+"_for_tree"+"."+self.avatar_url.split(".")[1]
 
+
 class Project(models.Model):
     name = models.CharField(max_length=100, null=False)
     desc = models.CharField(max_length=200, null=True)
@@ -180,3 +181,8 @@ class CaseRecord(models.Model):
             return "/" + self.attach.url[self.attach.url.find("static"):]
         else:
             return "/static/case_execution_attach/default_image_missing.png"
+
+
+class ReportTemplate(models.Model):
+    name = models.CharField(max_length=100, null=False)
+    info = models.TextField(null=False, default="")

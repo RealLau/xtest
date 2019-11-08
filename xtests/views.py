@@ -734,3 +734,16 @@ def remove_cases_from_plan(request):
             return JsonResponse({"status": STATUS_FAILED, "msg": "参数错误"})
     else:
         return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
+
+
+def report_template(request):
+    if request.method == "GET":
+        pk = request.GET.get("pk")
+        if pk:
+            rp = ReportTemplate.objects.get(pk=pk)
+            return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": {"name": rp.name, "info": rp.info}})
+        else:
+            rps = ReportTemplate.objects.all()
+            return render(request, "report_template.html", {"rps": rps})
+    else:
+        return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
