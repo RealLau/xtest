@@ -181,8 +181,3 @@ class CaseRecord(models.Model):
             return "/" + self.attach.url[self.attach.url.find("static"):]
         else:
             return "/static/case_execution_attach/default_image_missing.png"
-
-
-class ReportTemplate(models.Model):
-    name = models.CharField(max_length=100, null=False)
-    info = models.TextField(null=False, default="")

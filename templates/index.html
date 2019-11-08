@@ -235,7 +235,7 @@
                             Chart.defaults.global.defaultFontColor = 'white';
                             // DOM is ready
                             $(function () {
-                                drawBarChart(data.modules, data.modules_data); // Bar Chart
+                                drawBarChart(data.modules, data.highest, data.high, data.medium, data.low, data.lowest); // Bar Chart
                             })
                         } else {
                             let result_message = resultData["msg"];

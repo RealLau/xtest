@@ -580,3 +580,10 @@ ul.ks-checkbox-tags li input[type="checkbox"]:focus + label {
     color: white;
     padding: 10px;
 }
+
+.copy_right_link{
+ color: red;
+}
+.copy_right_link:hover{
+    color: yellow;
+}

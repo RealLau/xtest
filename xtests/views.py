@@ -656,18 +656,47 @@ def bugs_by_module(request):
         q = ~Q(associate_bug='') & Q(plan=p)
         bugs = CaseRecord.objects.values_list('associate_bug', flat=True).filter(q)
         jira_client = get_jira_client()
-        tem = []
+        highest_list = []
+        high_list = []
+        medium_list = []
+        low_list = []
+        lowest_list = []
+        modules = []
+        issues = []
         for b_id in list(bugs):
             issue = jira_client.issue(b_id)
+            issues.append(issue)
             org_components = issue.fields.components
-            components = [i.name for i in org_components]
-            tem += components
-        if len(tem)>=1:
-            dic = dict(Counter(tem))
-            keys, values = zip(*dic.items())
-            res = {"modules": keys, "modules_data":values}
-        else:
-            res = {"modules": [], "modules_data":[]}
+            modules += [module.name for module in org_components if module.name not in modules]
+        for m in modules:
+            highest, high, medium, low, lowest = 0, 0, 0, 0, 0
+            for issue in issues:
+                issue_priority = issue.fields.priority.name
+                org_components = issue.fields.components
+                issue_modules_names = [i.name for i in org_components]
+                if m in issue_modules_names:
+                    if issue_priority == "Highest":
+                        highest += 1
+                    elif issue_priority == "Medium":
+                        medium += 1
+                    elif issue_priority == "High":
+                        high += 1
+                    elif issue_priority == "Low":
+                        low += 1
+                    elif issue_priority == "Lowest":
+                        lowest += 1
+            highest_list.append(highest)
+            high_list.append(high)
+            medium_list.append(medium)
+            low_list.append(low)
+            lowest_list.append(lowest)
+        res = {}
+        res["modules"] = modules
+        res["highest"] = highest_list
+        res["high"] = high_list
+        res["medium"] = medium_list
+        res["low"] = low_list
+        res["lowest"] = lowest_list
         return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": res})
     else:
         return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
@@ -694,6 +723,7 @@ def plan_execute_info(request):
             t = Task.objects.get(plan=p, executor=CustomUser.objects.get(pk=e))
             processes.append(t.get_progress)
         res["processes"] = processes
+        print(res)
         return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": res})
     else:
         return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
@@ -736,14 +766,3 @@ def remove_cases_from_plan(request):
         return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
 
 
-def report_template(request):
-    if request.method == "GET":
-        pk = request.GET.get("pk")
-        if pk:
-            rp = ReportTemplate.objects.get(pk=pk)
-            return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": {"name": rp.name, "info": rp.info}})
-        else:
-            rps = ReportTemplate.objects.all()
-            return render(request, "report_template.html", {"rps": rps})
-    else:
-        return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})

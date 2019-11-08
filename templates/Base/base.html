@@ -34,7 +34,7 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav mx-auto h-100">
-                <li class="nav-item">
+                    <li class="nav-item">
                         {% if '/home' in request.path %}
 
                             <a class="nav-link active" href="{% url 'home' %}">
@@ -108,6 +108,16 @@
                         </a>
                     </li>
                     <li class="nav-item dropdown">
+                        {% if 'report_template' in request.path %}
+                            <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown" role="button"
+                               data-toggle="dropdown"
+                               aria-haspopup="true" aria-expanded="false">
+                                <i class="fa fa-cog"></i>
+                                <span>
+                                    设置 <i class="fa fa-angle-down"></i>
+                                </span>
+                            </a>
+                        {% else %}
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                            data-toggle="dropdown"
                            aria-haspopup="true" aria-expanded="false">
@@ -116,8 +126,9 @@
                                     设置 <i class="fa fa-angle-down"></i>
                                 </span>
                         </a>
+                        {% endif %}
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <a class="dropdown-item" href="{% url 'report_template' %}">报告模板</a>
+                            <a class="dropdown-item" href="">报告模板</a>
                         </div>
                     </li>
                 </ul>
@@ -150,8 +161,9 @@
     <footer class="tm-footer row tm-mt-small">
         <div class="col-12 font-weight-light">
             <p class="text-center text-white mb-0 px-4 small">
-                <strong>XTEST</strong> 2019 by <a href="">Real Lau</a>. The source code is licensed
-                <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.
+                <strong>XTEST</strong> 2019 by <a class="copy_right_link" href="">Real Lau</a>. The source code is
+                licensed
+                <a class="copy_right_link" href="http://opensource.org/licenses/mit-license.php">MIT</a>.
             </p>
         </div>
     </footer>
