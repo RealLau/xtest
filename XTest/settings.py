@@ -98,11 +98,11 @@ WSGI_APPLICATION = 'XTest.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'xtest',
-        'USER': 'xtest',
-        'PASSWORD': 'Fatri2019',
-        'HOST': '192.168.31.158',
-        'PORT': '3307',
+        'NAME': 'your_dbname',
+        'USER': 'your_db_username',
+        'PASSWORD': 'your_db_password',
+        'HOST': 'your_db_host',
+        'PORT': 'your_db_port',
         'OPTIONS': {
             'charset': 'utf8mb4',
         },
@@ -176,8 +176,8 @@ MEDIA_URL = "/media/uploads/"
 AUTH_USER_MODEL = 'xtests.CustomUser'
 
 SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username', 'email']
-SOCIAL_AUTH_GITHUB_KEY = 'Iv1.98e18e80f30a1ae4'
-SOCIAL_AUTH_GITHUB_SECRET = '742c9fa9273b605e78d600884334c11f9b73f1ad'
+SOCIAL_AUTH_GITHUB_KEY = 'your_github__app_key'
+SOCIAL_AUTH_GITHUB_SECRET = 'your_github_app_secret'
 SOCIAL_AUTH_GITHUB_USE_OPENID_AS_USERNAME = True
 
 SOCIAL_AUTH_QQ_KEY = 'your_qq_app_key'
@@ -192,7 +192,7 @@ LOGOUT_REDIRECT_URL = 'home'
 BATCH_CREATE_CASE_ORIGIN_FILE_DIR = os.path.join(BASE_DIR, 'batch_case_org_dir')
 
 JIRA_CONFIG = {
-    'options': {"server": "http://192.168.31.158:8080"},
-    'auth': ('Real', 'Fatri2019'),
+    'options': {"server": "your_jira_server_address"},
+    'auth': ('your_jira_username', 'your_jira_password'),
     'search_condition': 'type="BUG"'
 }
