@@ -766,3 +766,11 @@ def remove_cases_from_plan(request):
         return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
 
 
+def report(request):
+    if request.method == "POST":
+        name = request.POST.get("report_name")
+        if not name or len(name)>30:
+            return JsonResponse({"status": STATUS_FAILED, "msg": MSG_INVALID_KEY_DATA+": 报告名称不能为空或超过30个字符"})
+        else:
+            with open(os.path.join(settings.REPORT_TEMPLATE_DIR, "template.md"), "r") as f:
+                t = f.read()
