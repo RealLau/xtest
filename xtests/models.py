@@ -22,6 +22,7 @@ class CustomUser(AbstractUser):
     def avatar_url_for_tree(self):
         return self.avatar_url.split(".")[0]+"_for_tree"+"."+self.avatar_url.split(".")[1]
 
+
 class Project(models.Model):
     name = models.CharField(max_length=100, null=False)
     desc = models.CharField(max_length=200, null=True)

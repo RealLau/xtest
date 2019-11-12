@@ -554,7 +554,7 @@ ul.ks-checkbox-tags li input[type="checkbox"]:focus + label {
 }
 .nav-dropdown ul li {
     padding-top: 1px; /* Introducing a padding between the li and the a give the illusion spaced items */
-    float: none;
+    float: left;
 }
 .nav-dropdown ul a {
     white-space: nowrap; /* Stop text wrapping and creating multi-line dropdown items */
@@ -579,4 +579,11 @@ ul.ks-checkbox-tags li input[type="checkbox"]:focus + label {
     background-color: #f5a623;
     color: white;
     padding: 10px;
+}
+
+.copy_right_link{
+ color: red;
+}
+.copy_right_link:hover{
+    color: yellow;
 }

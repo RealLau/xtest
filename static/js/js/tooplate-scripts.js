@@ -144,80 +144,117 @@ Colors.random = function () {
     return result;
 };
 
-function drawBarChart(modules, modules_data) {
-    let bc = $("#barChart");
-    let bc_parent = $(bc).parent();
-    let bg_colors = [];
-    for (let i = 0; i < modules.length; i++) {
-        let c = Colors.names[Colors.random()];
-        while (true) {
-            if (!bg_colors.includes(c)) {
-                bg_colors.push(c);
-                break;
-            } else {
-                c = Colors.names[Colors.random()];
-            }
-        }
-    }
-    if ($(bc).length) {
-        $(bc).remove();
-        $(bc_parent).append("<canvas id=\"barChart\"></canvas>");
+function drawBarChart(modules, highest, high, medium, low, lowest) {
+    var ec = $("#barChart");
+    var ec_parent = $(ec).parent();
+    if ($(ec).length) {
+        $(ec).remove();
+        $(ec_parent).append("<canvas id=\"barChart\"></canvas>");
         ctxBar = document.getElementById("barChart").getContext("2d");
+        bg_colors_highest_count = [];
+        bg_colors_high_count = [];
+        bg_colors_medium_count = [];
+        bg_colors_low_count = [];
+        bg_colors_lowest_count = [];
+        for (let i = 0; i < modules.length; i++) {
+            bg_colors_highest_count.push("#ff0000");
+            bg_colors_high_count.push("#ffa500");
+            bg_colors_medium_count.push("#800080");
+            bg_colors_low_count.push("#00ffff");
+            bg_colors_lowest_count.push("#ffffff");
+        }
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: modules,
+                datasets: [{
+                    label: 'Highest',
+                    yAxisID: 'Highest',
+                    data: highest,
+                    backgroundColor: bg_colors_highest_count,
+                }, {
+                    label: 'High',
+                    yAxisID: 'High',
+                    data: high,
+                    backgroundColor: bg_colors_high_count,
 
-        optionsBar = {
-            responsive: true,
-            scales: {
-                yAxes: [
-                    {
-                        barPercentage: 0.2,
-                        ticks: {
-                            min: 0, // it is for ignoring negative step.
-                            beginAtZero: true
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: "模块"
-                        }
-                    }
-                ],
-                xAxes: [
-                    {
-                        ticks: {
-                            beginAtZero: true, min: 0, callback: function (value, index, values) {
+                }, {
+                    label: 'Medium',
+                    yAxisID: 'Medium',
+                    data: medium,
+                    backgroundColor: bg_colors_medium_count,
+
+                }, {
+                    label: 'Low',
+                    yAxisID: 'Low',
+                    data: low,
+                    backgroundColor: bg_colors_low_count,
+
+                }, {
+                    label: 'Lowest',
+                    yAxisID: 'Lowest',
+                    data: lowest,
+                    backgroundColor: bg_colors_lowest_count,
+
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        id: 'Highest',
+                        type: 'linear',
+                        position: 'left',
+                        ticks:{
+                            min:0,
+                            beginAtZero: true,
+                            callback: function (value, index, values) {
                                 if (Math.floor(value) === value) {
                                     return value;
                                 }
                             }
-                        },
-
-                    }
-                ]
+                        }
+                    }, {
+                        id: 'High',
+                        display: false,
+                        type: 'linear',
+                        position: 'right',
+                        ticks: {
+                            min: 0
+                        }
+                    },
+                        {
+                        id: 'Medium',
+                            display: false,
+                        type: 'linear',
+                        position: 'right',
+                        ticks: {
+                            min: 0
+                        }
+                    },
+                        {
+                        id: 'Low',
+                            display: false,
+                        type: 'linear',
+                        position: 'right',
+                        ticks: {
+                            min: 0
+                        }
+                    },
+                        {
+                        id: 'Lowest',
+                            display: false,
+                        type: 'linear',
+                        position: 'right',
+                        ticks: {
+                            min: 0
+                        }
+                    }]
+                }
             }
-        };
-
-        optionsBar.maintainAspectRatio =
-            $(window).width() < width_threshold ? false : true;
-
-        configBar = {
-            type: "horizontalBar",
-            data: {
-                // labels: ["Red", "Aqua", "Green", "Yellow", "Purple", "Orange", "Blue"],
-                labels: modules,
-                datasets: [
-                    {
-                        label: "BUG数量",
-                        // data: [33, 40, 28, 49, 58, 38, 44],
-                        data: modules_data,
-                        backgroundColor: bg_colors,
-                        borderWidth: 0
-                    }
-                ]
-            },
-            options: optionsBar
-        };
-
-        barChart = new Chart(ctxBar, configBar);
+        });
     }
+
+
 }
 
 function drawPieChart(data_level) {

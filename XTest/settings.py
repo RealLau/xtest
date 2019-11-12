@@ -191,6 +191,8 @@ LOGOUT_REDIRECT_URL = 'home'
 
 BATCH_CREATE_CASE_ORIGIN_FILE_DIR = os.path.join(BASE_DIR, 'batch_case_org_dir')
 
+REPORT_TEMPLATE_DIR = os.path.join(BASE_DIR, 'report_template')
+
 JIRA_CONFIG = {
     'options': {"server": "your_jira_server_address"},
     'auth': ('your_jira_username', 'your_jira_password'),
