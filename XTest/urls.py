@@ -24,7 +24,6 @@ from xtests import views
 urlpatterns = [
                   url(r'batch_create_case/', views.batch_create_case, name="batch_create_case"),
                   url(r'plan_associate/', views.plan_associate, name="plan_associate"),
-                  path(r'search/', include('haystack.urls')),
                   url(r'sign_in/', views.sign_in, name="sign_in"),
                   url(r'home/$', views.index, name="home"),
                   url(r'task/', views.task, name="task"),
