@@ -60,6 +60,7 @@ def data_check(file_path):
                                 "expectation": case_expectation, "priority": case_priority}
                     module_case_dic[module_name].append(dic_case)
             data[p_name] = module_case_dic
+    print(data)
     return data
 
 

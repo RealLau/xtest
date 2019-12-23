@@ -181,3 +181,15 @@ class CaseRecord(models.Model):
             return "/" + self.attach.url[self.attach.url.find("static"):]
         else:
             return "/static/case_execution_attach/default_image_missing.png"
+
+
+class ReportTemplate(models.Model):
+    name = models.CharField(max_length=30, blank=False)
+    body = models.TextField(null=False)
+    rule = models.ForeignKey('ReportRule', on_delete=models.CASCADE)
+
+
+class ReportRule(models.Model):
+    name = models.CharField(max_length=30, blank=False)
+    bug_type = models.CharField(max_length=1, choices=[('1', 'Lowest'), ('2', 'Low'), ('3', 'Middle'), ('4', 'High'), ('5', 'Highest')], default='3')
+    bug_count = models.IntegerField()

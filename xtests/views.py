@@ -142,17 +142,17 @@ def batch_create_case(request):
                     module.save()
                 else:
                     module = query_module_results[0]
-                    for case_info in data[p_name][module_name]:
-                        title = case_info["title"]
-                        desc = case_info["desc"]
-                        preconditions = case_info["preconditions"]
-                        steps = case_info["steps"]
-                        expectation = case_info["expectation"]
-                        priority = case_info["priority"]
-                        case = TestCase.objects.create(module=module, title=title, desc=desc,
-                                                       preconditions=preconditions, steps=steps,
-                                                       expectation=expectation, priority=priority)
-                        case.save()
+                for case_info in data[p_name][module_name]:
+                    title = case_info["title"]
+                    desc = case_info["desc"]
+                    preconditions = case_info["preconditions"]
+                    steps = case_info["steps"]
+                    expectation = case_info["expectation"]
+                    priority = case_info["priority"]
+                    case = TestCase.objects.create(module=module, title=title, desc=desc,
+                                                   preconditions=preconditions, steps=steps,
+                                                   expectation=expectation, priority=priority)
+                    case.save()
         return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_BATCH_CREATE_SUCCESS})
 
 
@@ -768,9 +768,64 @@ def remove_cases_from_plan(request):
 
 def report(request):
     if request.method == "POST":
-        name = request.POST.get("report_name")
-        if not name or len(name)>30:
-            return JsonResponse({"status": STATUS_FAILED, "msg": MSG_INVALID_KEY_DATA+": 报告名称不能为空或超过30个字符"})
+        name = request.POST.get("template_name")
+        body = request.POST.get("template_body")
+        rule_pk = request.POST.get("rule_pk")
+        if not name or len(name)>30 or not body:
+            return JsonResponse({"status": STATUS_FAILED, "msg": MSG_INVALID_KEY_DATA+": 模板名称不能为空或超过30个字符, 模板主体不能为空"})
         else:
-            with open(os.path.join(settings.REPORT_TEMPLATE_DIR, "template.md"), "r") as f:
-                t = f.read()
+            already_exist_same_name_template = ReportTemplate.objects.filter(name=name)
+            if already_exist_same_name_template:
+                return JsonResponse({"status": STATUS_FAILED, "msg": "已存在同名模板"})
+            else:
+                r = ReportRule.objects.get(pk=rule_pk)
+                t = ReportTemplate.objects.create(name=name, body=body, rule=r)
+                t.save()
+                return JsonResponse({"status": MSG_CREATE_SUCCESS, "msg": "模板创建成功"})
+    elif request.method == "GET":
+        pk = request.GET.get("pk")
+        if not pk:
+            templates = ReportTemplate.objects.all()
+            return render(request, "report_templates.html", {"templates": templates})
+        else:
+            t = ReportTemplate.objects.get(pk=pk)
+            return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": {"name": t.name, "body": t.body, "rule_name": t.rule.name}})
+    elif request.method == "DELETE":
+        pk = QueryDict(request.body).get("pk")
+        t = ReportTemplate.objects.get(pk=pk)
+        t.delete()
+        return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_DELETE_SUCCESS})
+    else:
+        return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})
+
+
+def report_rule(request):
+    if request.method == "POST":
+        name = request.POST.get("rule_name")
+        bug_type = request.POST.get("rule_bug_type")
+        bug_count = request.POST.get("rule_bug_count")
+        if not name or len(name)>30:
+            return JsonResponse({"status": STATUS_FAILED, "msg": MSG_INVALID_KEY_DATA+": 规则名称不能为空或超过30个字符"})
+        else:
+            already_exist_same_name_rule = ReportRule.objects.filter(name=name)
+            if already_exist_same_name_rule:
+                return JsonResponse({"status": STATUS_FAILED, "msg": "已存在同名规则"})
+            else:
+                t = ReportRule.objects.create(name=name, bug_type=bug_type, bug_count=bug_count)
+                t.save()
+                return JsonResponse({"status": MSG_CREATE_SUCCESS, "msg": "规则创建成功"})
+    elif request.method == "GET":
+        pk = request.GET.get("pk")
+        if not pk:
+            rules = ReportRule.objects.all()
+            return render(request, "report_rules.html", {"rules": rules})
+        else:
+            r = ReportRule.objects.get(pk=pk)
+            return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_QUERY_SUCCESS, "data": {"name": r.name, "bug_type": r.bug_type, "bug_count": r.bug_count}})
+    elif request.method == "DELETE":
+        pk = QueryDict(request.body).get("pk")
+        t = ReportRule.objects.get(pk=pk)
+        t.delete()
+        return JsonResponse({"status": STATUS_SUCCESS, "msg": MSG_DELETE_SUCCESS})
+    else:
+        return JsonResponse({"status": STATUS_FAILED, "msg": MSG_METHOD_NOT_ALLOWED})

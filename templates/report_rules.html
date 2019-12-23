@@ -21,41 +21,36 @@
 {% block shotcut_operation %}
     {% if projects %}
         <span class="item_create_info">点我<a href="javascript:void(0)"><i
-                class="fa fa-pencil operation_link"></i></a>创建新项目
+                class="fa fa-pencil operation_link"></i></a>创建新模板
     </span>
     {% endif %}
 {% endblock %}
 {% block main_content %}
     <div class="custom-main">
-        {% if projects %}
+        {% if templates %}
             <div class="col-12 tm-block-col">
                 <div class="tm-bg-primary-dark tm-block tm-block-taller tm-block-scroll">
                     <h2 class="tm-block-title">项目列表</h2>
                     <table class="table">
                         <thead>
                         <tr>
-                            <th scope="col">项目</th>
+
                             <th scope="col">名称</th>
-                            <th scope="col">描述</th>
-                            <th scope="col">创建时间</th>
-                            <th scope="col" colspan="2">操作</th>
+                            <th scope="col" colspan="3">操作</th>
                         </tr>
                         </thead>
                         {% csrf_token %}
                         <tbody>
-                        {% for p in projects %}
+                        {% for t in templates %}
                             <tr class="row-detail">
-                                <td>
-                                    <img src="{{ p.avatar_url }}" alt="project avatar"
-                                         class="rounded-circle standard-image">
-                                </td>
-                                <td><b>{{ p.name }}</b></td>
-                                <td><b>{{ p.desc }}</b></td>
-                                <td><b>{{ p.created_time | date }}</b></td>
+                                <td><b>{{ t.name }}</b></td>
+                                <td><a href="javascript:void(0)" class="remove_project" id="{{ t.pk }}"><i
+                                        class="fa fa-info operation_link"></i></a></td>
                                 <td><a href="javascript: void(0)"><i
-                                        class="fa fa-edit operation_link edit-project" id="{{ p.pk }}"></i></a></td>
-                                <td><a href="javascript:void(0)" class="remove_project" id="{{ p.pk }}"><i
+                                        class="fa fa-edit operation_link edit-project" id="{{ t.pk }}"></i></a></td>
+                                <td><a href="javascript:void(0)" class="remove_project" id="{{ t.pk }}"><i
                                         class="fa fa-remove operation_link"></i></a></td>
+
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -66,7 +61,7 @@
         {% else %}
             <div class="center-div">
                 <p><img src="/static/images/img/nothing.png" alt="nothing-img"></p>
-                <span class="item_create_info_from_none">还没有任何项目呢，请先创建<a href="javascript:void(0)"><i
+                <span class="item_create_info_from_none">还没有任何模板呢，请先创建<a href="javascript:void(0)"><i
                         class="fa fa-pencil fa-3x operation_link"></i></a>一个吧!</span>
             </div>
         {% endif %}
@@ -74,46 +69,50 @@
 {% endblock %}
 
 {% block added_script %}
+    <script src="/static/js/editor.md-master/lib/marked.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/prettify.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/raphael.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/underscore.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/sequence-diagram.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/flowchart.min.js"></script>
+    <script src="/static/js/editor.md-master/lib/jquery.flowchart.min.js"></script>
+    <script src="/static/js/editor.md-master/editormd.min.js"></script>
     <script type="application/javascript">
         let main = $(".custom-main");
         $(".item_create_info, .item_create_info_from_none").on("click", function () {
             $(main).children().remove();
-            let html_source_new_project = '<div class="wrap-contact100">' +
-                '<form class="contact100-form validate-form" method="post" action=""\n' +
+            let html_source_new_project = '<div class="center-div"><form class="contact100-form validate-form" method="post" action=""\n' +
                 '                      enctype="multipart/form-data">\n' +
                 '                    <div class="wrap-input100 validate-input" data-validate="Please enter project name">\n' +
                 '                        {% csrf_token %}\n' +
-                '                        <input class="input100" type="text" name="project_name" placeholder="项目名称*">\n' +
+                '                        <input class="input100" type="text" name="template_name" placeholder="模板名称*">\n' +
                 '\n' +
                 '                    </div>\n' +
-                '                    <div class="wrap-input100 validate-input">\n' +
-                '                    <textarea class="input100" name="project_desc" placeholder="描述"\n' +
+                '                    <div class="wrap-input100 validate-input" id="template_body">\n' +
+                '                    <textarea class="input100" name="template_body" placeholder="模板主体*"\n' +
                 '                              aria-label="optional"></textarea>\n' +
                 '\n' +
                 '                    </div>\n' +
-                '                    <div class="file-upload-wrapper" data-text="project avatar">\n' +
-                '                    </div>\n' +
-                '                    <input name="avatar" type="file" class="file-upload-field" value="">\n' +
                 '                    <div class="container-contact100-form-btn">\n' +
                 '<button class="operations confirm-create-project"><span><i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>保存</span></button>' +
                 '<button class="operations cancel-create-project" style="margin-left: 20px;background:black"><span><i class="fa fa-paper-plane-o m-r-6" aria-hidden="true"></i>取消</span></button>' +
                 '</div></form></div>';
             $(main).append(html_source_new_project);
-            $(".file-upload-wrapper").on("click", function () {
-                $("input[name='avatar']").click();
-            });
-            $("form").on("change", ".file-upload-field", function () {
-                if ($(this).val() !== "") {
-                    $(this).prevUntil(".file-upload-wrapper");
-                    $(".file-upload-wrapper").attr("data-text", $(this).val().replace(/.*([\/\\])/, ''));
-                }
+            var template_body_editor = editormd("template_body", {
+                width: "100%",
+                height: 300,
+                placeholder: "模板主体*",
+                toolbarIcons: function () {
+                    return ["undo", "redo", "|", "bold", "hr", "|", "preview", "watch", "|", "list-ol", "list-ul", "link"]
+                },
+                path: "/static/js/editor.md-master/lib/"
             });
             $("form").submit(function (e) {
                 e.preventDefault();
                 let formData = new FormData(this);
                 $.ajax({
                     type: "POST",
-                    url: "{% url 'project' %}",
+                    url: "{% url 'report' %}",
                     data: formData,
                     contentType: false,
                     processData: false,
@@ -147,7 +146,7 @@
                 '                      action="">' +
                 '                    {% csrf_token %}\n' +
                 '                    <div class="wrap-input100 validate-input" data-validate="Please enter project name">\n' +
-                '                        <input class="input100" type="text" name="project_name" placeholder="project name *"\n' +
+                '                        <input class="input100" type="text" name="template_name" placeholder="project name *"\n' +
                 '                               value="">\n' +
                 '                        <input type="text" name="pk" style="display: none" value=""/>\n' +
                 '                        \n' +
@@ -185,7 +184,7 @@
                     let result_data = resultData["data"];
                     let result_status = resultData["status"];
                     if (result_status === 1) {
-                        $("input[name='project_name']").val(result_data.name);
+                        $("input[name='template_name']").val(result_data.name);
                         $("textarea").text(result_data.desc);
                         $("#file_upload_div>img").attr("src", result_data.avatar);
                     }
